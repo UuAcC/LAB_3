@@ -23,5 +23,5 @@ public:
 	bool isEmpty();
 
 	void push(T v);
-	T pop();
+	const T& pop();
 };

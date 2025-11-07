@@ -21,22 +21,6 @@ public:
 	double calculate(const map<char, double>& values); // собсна вычисление
 };
 
-// если понадобятся именно ошибки - раскомментирую и переделаю
-//static TStack<int> skobochniy_check(std::string str) {
-//	size_t n = str.size();
-//	TStack<int> s(n);
-//	for (int i = 0; i < n; i++) {
-//		if (str[i] == '(') {
-//			try { s.push(i); }
-//			catch (...) {}
-//		}
-//		else {
-//			try { s.pop(); }
-//			catch (...) {}
-//		}
-//	} return s;
-//}
-
 // Проверяет арифметическое выражение со скобками на корректность расстановки скобок.
 static bool skobochniy_check(std::string str) {
 	const size_t n = str.size();

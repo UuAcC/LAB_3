@@ -18,7 +18,7 @@ include_directories(${MP2_INCLUDE})
 # BUILD
 add_subdirectory(src)
 add_subdirectory(expression_lib)
-#add_subdirectory(gtest)
+add_subdirectory(googletest, EXCLUDE_FROM_ALL)
 #add_subdirectory(test)
 
 # REPORT

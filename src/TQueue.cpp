@@ -70,9 +70,9 @@ void TQueue<T>::push(T v) {
 }
 
 template<class T>
-T TQueue<T>::pop() {
+const T& TQueue<T>::pop() {
 	if (this->isEmpty()) throw - 1;
-	T res = a[s];
+	T res = arr[s];
 	s = next(s);
 	return res;
 }
