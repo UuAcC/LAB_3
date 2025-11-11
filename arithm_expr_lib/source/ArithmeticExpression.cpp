@@ -5,9 +5,8 @@ map<string, int> ArithmeticExpression::priority {
 	{"(", 0}, {"+", 1}, {"-", 1}, {"*", 2},{"/", 2}
 };
 
-void ArithmeticExpression::to_postfix(string _infix) {
-	if (!skobochniy_check(_infix)) throw -1;
-	TStack<string> st(postfix.size());
+void ArithmeticExpression::to_postfix() {
+	TStack<string> st(infix.size());
 	string stackItem;
 	for (string item : infix) {
 		if (item == "(") { st.push(item); }
@@ -20,10 +19,10 @@ void ArithmeticExpression::to_postfix(string _infix) {
 		}
 		if (item == "+" || item == "-" || item == "*" || item == "/") {
 			while (!st.isEmpty()) {
-				stackItem = st.pop();
+				stackItem = st.top();
 				if (priority[item] <= priority[stackItem])
-					postfix.push_back(stackItem);
-				else { st.push(stackItem); break; }
+					postfix.push_back(st.pop());
+				else { break; }
 			} st.push(item);
 		}
 		else { postfix.push_back(item); }
@@ -35,8 +34,9 @@ void ArithmeticExpression::to_postfix(string _infix) {
 }
 
 ArithmeticExpression::ArithmeticExpression(string _infix) {
+	if (!skobochniy_check(_infix)) throw - 1;
 	infix = Parcer::parce_infix(_infix); 
-	to_postfix(_infix);
+	to_postfix();
 }
 
 double ArithmeticExpression::calculate() {

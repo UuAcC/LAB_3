@@ -1,3 +1,5 @@
+#pragma once
+
 #include <vector>
 #include <string>
 #include "TStack.h"
@@ -42,6 +44,7 @@ class Parcer {
 public:
 	// ¬озвращает вектор лексем строки, содержащий операции и числа.
 	static vector<string> parce_infix(string str);
+	// ¬озвращает вектор лексем из постфиксной формы записи. (пока ничего не делает)
 	static vector<string> parce_postfix(string str, vector<string> _infix = {});
 };
 

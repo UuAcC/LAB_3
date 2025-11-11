@@ -1,30 +1,33 @@
 cmake_minimum_required(VERSION 3.5)
 
-set(PROJECT_NAME tstack_tqueue)
+set(PROJECT_NAME LAB-3)
 project(${PROJECT_NAME})
 
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/bin)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE})
+set(STACK_QUEUE_LIB_NAME stack_queue_lib)
+set(STACK_QUEUE_LIBRARY "${PROJECT_NAME}_${STACK_QUEUE_LIB_NAME}")
+set(STACK_QUEUE_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/${STACK_QUEUE_LIB_NAME}")
 
-set(MP2_LIBRARY "${PROJECT_NAME}")
-set(MP2_TESTS   "test_${PROJECT_NAME}")
-set(MP2_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/include")
+set(ARITHM_EXPR_LIB_NAME arithm_expr_lib)
+set(ARITHM_EXPR_LIBRARY "${PROJECT_NAME}_${ARITHM_EXPR_LIB_NAME}")
+set(ARITHM_EXPR_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/${ARITHM_EXPR_LIB_NAME}/include")
 
-include_directories(${MP2_INCLUDE})
-#include_directories("${MP2_INCLUDE}" gtest)
+set(LAB_TESTS "test_${PROJECT_NAME}")
 
-# BUILD
-add_subdirectory(src)
-add_subdirectory(expression_lib)
-add_subdirectory(googletest, EXCLUDE_FROM_ALL)
-#add_subdirectory(test)
 
-# REPORT
-message( STATUS "")
-message( STATUS "General configuration for ${PROJECT_NAME}")
-message( STATUS "======================================")
-message( STATUS "")
-message( STATUS "   Configuration: ${CMAKE_BUILD_TYPE}")
-message( STATUS "")
+include_directories(${STACK_QUEUE_INCLUDE})
+include_directories(${ARITHM_EXPR_INCLUDE})
+
+add_subdirectory(${STACK_QUEUE_LIB_NAME})
+add_subdirectory(${ARITHM_EXPR_LIB_NAME})
+
+
+set(BENCHMARK_ENABLE_TESTING OFF)
+set(HAVE_STD_REGEX 0)
+set(HAVE_STEADY_CLOCK 0)
+set(HAVE_POSIX_REGEX 0)
+add_subdirectory("googletest/" EXCLUDE_FROM_ALL)
+
+enable_testing()
+
+
+add_subdirectory(tests)

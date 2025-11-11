@@ -1,6 +1,9 @@
-#include <iostream>
-#include <map>
+#pragma once
+
 #include <vector>
+#include <string>
+#include <map>
+#include "TStack.h"
 
 using namespace std;
 
@@ -10,7 +13,7 @@ class ArithmeticExpression {
 	static map<string, int> priority; // Словарь операций с их приоритетами.
 private:
 	// Поле infix -> поле postfix
-	void to_postfix(string _infix);
+	void to_postfix();
 public:
 	ArithmeticExpression(string _infix);
 	inline vector<string> get_infix() const { return infix; }

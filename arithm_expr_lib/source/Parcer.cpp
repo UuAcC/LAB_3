@@ -9,9 +9,13 @@ string Parcer::integers = "0123456789";
 string Parcer::s_buffer;
 vector<string> Parcer::v_buffer;
 
-inline void Parcer::f1(char c) { v_buffer.push_back("" + c); }
-inline void Parcer::f2(char c) { s_buffer = "" + c; }
-inline void Parcer::f3(char c) { v_buffer.push_back(s_buffer); v_buffer.push_back("" + c); }
+inline void Parcer::f1(char c) { v_buffer.push_back(string(1, c)); }
+inline void Parcer::f2(char c) { s_buffer = string(1, c); }
+inline void Parcer::f3(char c) { 
+	v_buffer.push_back(s_buffer); 
+	v_buffer.push_back(string(1, c)); 
+	s_buffer.clear();
+}
 inline void Parcer::f4(char c) { s_buffer += c; }
 
 int Parcer::pi_next(char c) {
@@ -34,11 +38,17 @@ func_pointer Parcer::pi_call(int st, char c) {
 }
 
 vector<string> Parcer::parce_infix(string str) {
+	v_buffer.clear();
+	s_buffer.clear();
 	// Парсинг строки в вектор лексем
 	int st = ST0;
 	for (int i = 0; i < str.size(); ++i) {
-		st = pi_next(str[i]);
 		pi_call(st, str[i])(str[i]);
+		st = pi_next(str[i]);
+	}
+	if (!s_buffer.empty()) {
+		v_buffer.push_back(s_buffer);
+		s_buffer.clear();
 	}
 	// Обработка унарных операторов             
 	auto iterator = v_buffer.begin();
@@ -52,7 +62,7 @@ vector<string> Parcer::parce_infix(string str) {
 	}
 	// Очистка буфера и возврат значения
 	vector<string> res(v_buffer);
-	v_buffer.clear(); s_buffer = "";
+	v_buffer.clear(); s_buffer.clear();
 	return res;
 }
 vector<string> Parcer::parce_postfix(string str, vector<string> _infix) {
