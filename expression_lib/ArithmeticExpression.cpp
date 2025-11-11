@@ -1,22 +1,46 @@
 #include "ArithmeticExpression.h"
 #include "Parcer.h"
 
-map<char, int> ArithmeticExpression::priority {
-	/*{'(', 0},*/ {'+', 1}, {'-', 1}, {'*', 2},{'/', 2}
+map<string, int> ArithmeticExpression::priority {
+	{"(", 0}, {"+", 1}, {"-", 1}, {"*", 2},{"/", 2}
 };
 
-void ArithmeticExpression::to_postfix() {
-	if (!skobochniy_check(infix.)) throw -1;
-	lexems = Parcer::parce_infix(infix);
-	
+void ArithmeticExpression::to_postfix(string _infix) {
+	if (!skobochniy_check(_infix)) throw -1;
+	TStack<string> st(postfix.size());
+	string stackItem;
+	for (string item : infix) {
+		if (item == "(") { st.push(item); }
+		if (item == ")") {
+			stackItem = st.pop();
+			while (stackItem != "(") {
+				postfix.push_back(stackItem);
+				stackItem = st.pop();
+			}
+		}
+		if (item == "+" || item == "-" || item == "*" || item == "/") {
+			while (!st.isEmpty()) {
+				stackItem = st.pop();
+				if (priority[item] <= priority[stackItem])
+					postfix.push_back(stackItem);
+				else { st.push(stackItem); break; }
+			} st.push(item);
+		}
+		else { postfix.push_back(item); }
+	}
+	while (!st.isEmpty()) {
+		stackItem = st.pop();
+		postfix.push_back(stackItem);
+	}
 }
 
 ArithmeticExpression::ArithmeticExpression(string _infix) {
-	infix = Parcer::parce_infix(_infix); to_postfix();
+	infix = Parcer::parce_infix(_infix); 
+	to_postfix(_infix);
 }
 
-double ArithmeticExpression::calculate(const map<char, double>& values) {
-	
+double ArithmeticExpression::calculate() {
+	return 0.0;
 }
 
 static bool skobochniy_check(std::string str) {
