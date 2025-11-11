@@ -2,35 +2,24 @@
 #include <iostream>
 #include <map>
 #include <vector>
+
 using namespace std;
 
 class ArithmeticExpression {
-	string infix; // инфиксная форма записи
-	string postfix; // постфиксная форма записи
-	vector<char> lexems; // инфиксная форма записи, переведенная в вектор символов
-	static map<char, int> priority; // словарь операций с их приоритетами
-	map<char, double> operands; // словарь операндов с их значениями
+	vector<string> infix; // Инфиксная форма записи, переведенная в вектор строк.
+	vector<string> postfix; // Постфиксная форма записи, переведенная в вектор строк.
+	static map<char, int> priority; // Словарь операций с их приоритетами.
 private:
-	void parse(); // поле infix -> поле lexems
-	void to_postfix(); // поле infix -> поле postfix
+	// Поле infix -> поле postfix
+	void to_postfix(); 
 public:
 	ArithmeticExpression(string _infix);
-	inline string get_infix() const { return infix; }      // объяснять, думаю, не нужно
-	inline string get_postfix() const { return postfix; }  // объяснять, думаю, не нужно
-	vector<char> get_operands() const; // возвращает имена используемых операндов
-	double calculate(const map<char, double>& values); // собсна вычисление
+	inline vector<string> get_infix() const { return infix; }
+	inline vector<string> get_postfix() const { return postfix; }
+
+	// Cобственно вычисление значения выражения.
+	double calculate(const map<char, double>& values); 
 };
 
 // Проверяет арифметическое выражение со скобками на корректность расстановки скобок.
-static bool skobochniy_check(std::string str) {
-	const size_t n = str.size();
-	TStack<int> s(n);
-	try {
-		for (size_t i = 0; i < n; i++) {
-			if (str[i] == '(') s.push(i);
-			if (str[i] == ')') s.pop();
-			else continue;
-		} return s.isEmpty();
-	}
-	catch (...) { return false; }
-}
+static bool skobochniy_check(std::string str);
