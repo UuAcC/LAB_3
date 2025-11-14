@@ -4,23 +4,23 @@
 #include <string>
 #include <map>
 #include "TStack.h"
+#include "TQueue.h"
 
 using namespace std;
 using func_pointer = void(*)(char);
 
-
 class ArithmeticExpression {
-	vector<string> infix; // Инфиксная форма записи, переведенная в вектор строк.
-	vector<string> postfix; // Постфиксная форма записи, переведенная в вектор строк.
+	TQueue<string> infix; // Инфиксная форма записи, переведенная в вектор строк.
+	TQueue<string> postfix; // Постфиксная форма записи, переведенная в вектор строк.
 	static map<string, int> priority; // Словарь операций с их приоритетами.
 private:
 	class Parcer {
-		// Строка, содержащая все арифметические операции, а также ().
-		static string operations;
-		// Строки, содержащие все цифры + точку и только цифры без нуля соответственно.
-		static string integers, ints_no_zero;
 		// Состояния конечных автоматов, STX - состояние для throw.
 		enum state { ST0, ST1, ST2, ST3, STX };
+		// Все типы, которым может быть входной символ в decode.
+		enum type { ZERO, NUM, DOT, L_BR, R_BR, OP };
+		// Функция, определяющая, чем является входной символ.
+		static type decode(char c);
 
 // --------------------------------------------------------------------------------------------
 		//                Таблицы для конечного автомата parce_infix:
@@ -74,7 +74,7 @@ private:
 		static double buffer_dot;
 
 		// Возвращает следующее состояние конечного автомата to_double.
-		static map<char, map<state, state>> td_next;
+		static map<type, map<state, state>> td_next;
 
 		// Возвращает указатель на функцию, которую должен выполнить 
 		// конечный автомат to_double в данном случае.
@@ -89,20 +89,21 @@ private:
 		static inline double switch_char(char c);
 
 	public:
-		// Конечный автомат: вход - строка арифм. выражения, выход - вектор её лексем.
-		static vector<string> parce_infix(string str);
+		// Конечный автомат: вход - строка арифм. выражения, выход - очередь её лексем.
+		static TQueue<string> parce_infix(const string& str);
+		// Принимает на вход строку и возвращает очередь с постфиксной записью ее лексем.
+		static TQueue<string> parce_postfix(const string& str);
+		// Принимает на вход очередь с инфиксной записью лексем и возвращает постфиксную запись этой очереди.
+		static TQueue<string> parce_postfix(TQueue<string> que);
 		// Проверяет арифметическое выражение со скобками на корректность расстановки скобок.
-		static bool skobochniy_check(string str);
+		static bool skobochniy_check(const string& str);
 		// Конечный автомат, который переводит строку в число.
-		static double to_double(string str);
+		static double to_double(const string& str);
 	};
-	// Поле infix -> поле postfix
-	void to_postfix();
 public:
 	ArithmeticExpression(string _infix);
-	inline vector<string> get_infix() const { return infix; }
-	inline vector<string> get_postfix() const { return postfix; }
-
+	inline TQueue<string> get_infix() const { return infix; }
+	inline TQueue<string> get_postfix() const { return postfix; }
 	// Cобственно вычисление значения выражения.
 	double calculate(); 
 };

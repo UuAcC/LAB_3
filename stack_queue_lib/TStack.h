@@ -1,5 +1,6 @@
 #pragma once
 #include <iostream>
+#include <vector>
 
 template<class T>
 class TStack {
@@ -7,7 +8,10 @@ class TStack {
 	int curr;
 	int n;
 public:
-	TStack(int _n) { n = _n; curr = -1; mem = new T[n]; }
+	TStack(int _n = 1) { n = _n; curr = -1; mem = new T[n]; }
+	TStack(const std::vector<T>& vec) : TStack(vec.size()) {
+		for (size_t i = 0; i < n; ++i) { push(vec[i]); }
+	}
 	~TStack() { delete[] mem; }
 
 	TStack(const TStack& oth) {
@@ -68,6 +72,7 @@ public:
 	}
 
 	bool isEmpty() { return curr == -1; }
+	bool isFull() { return curr == n - 1; }
 
 	friend std::ostream& operator<<(std::ostream& ostr, TStack& s) {
 		ostr << "[ ";
@@ -77,10 +82,10 @@ public:
 		return ostr;
 	}
 	friend std::istream& operator>>(std::istream& istr, TStack& s) {
-		size_t n, i = 0; T val;
+		size_t n; T val;
 		istr >> n;
-		while (!s.isEmpty()) {
-			if (i >= n) break;
+		for (size_t i = 0; i < n; ++i) {
+			if (s.isFull()) break;
 			istr >> val; s.push(val);
 		}
 	}

@@ -1,17 +1,12 @@
 #include "ArithmeticExpression.h"
 
-#define CHAR_IN_OPS operations.find(c) != string::npos
-#define CHAR_IN_INTS integers.find(c) != string::npos
-#define CHAR_IN_INTS_NZ ints_on_zero.find(c) != string::npos
-#define CHAR_EQ_ZERO c == '0'
-#define CHAR_EQ_DOT c == '.'
-
-#define STATE PARCER::state
+#define CHAR_IN_OPS decode(c) >= 3 && decode(c) <= 5
+#define CHAR_IN_INTS decode(c) >= 0 && decode(c) <= 2
+ 
 #define PARCER ArithmeticExpression::Parcer
 
-string PARCER::operations = "()+-*/";
-string PARCER::integers = "0123456789.";
-string PARCER::ints_no_zero = "123456789";
+#define STATE PARCER::state
+#define TYPE PARCER::type
 
 // ------------------------------- КОНЕЧНЫЙ АВТОМАТ PARCE_INFIX -------------------------------
 
@@ -27,6 +22,22 @@ inline void PARCER::pi_f2(char c) {
 }
 inline void PARCER::pi_f3(char c) { pi_s_buffer += c; }
 
+TYPE PARCER::decode(char c) {
+	if (c >= '1' && c <= '9')
+		return NUM;
+	switch (c) {
+	case '0': return ZERO;
+	case '(': return L_BR;
+	case ')': return R_BR;
+	case '.': return DOT;
+	case '+': 
+	case '-':
+	case '*':
+	case '/': return OP;
+	default: throw runtime_error("DECODING_ERROR: unknown char " + c);
+	}
+}
+
 STATE PARCER::pi_next(char c) {
 	if (CHAR_IN_OPS) { return ST0; }
 	if (CHAR_IN_INTS) { return ST1; }
@@ -41,12 +52,12 @@ func_pointer PARCER::pi_call(state st, char c) {
 	}
 	else if (st == ST1) {
 		if (CHAR_IN_OPS) { return Parcer::pi_f2; }
-		if (CHAR_IN_INTS) { return Parcer::pi_f3; }
+		if (decode) { return Parcer::pi_f3; }
 		else throw - 1;
 	}
 }
 
-vector<string> PARCER::parce_infix(string str) {
+TQueue<string> PARCER::parce_infix(const string& str) {
 	pi_v_buffer.clear();
 	pi_s_buffer.clear();
 	// Парсинг строки в вектор лексем
@@ -55,10 +66,9 @@ vector<string> PARCER::parce_infix(string str) {
 		pi_call(st, str[i])(str[i]);
 		st = pi_next(str[i]);
 	}
-	if (!pi_s_buffer.empty()) {
+	if (!pi_s_buffer.empty()) 
 		pi_v_buffer.push_back(pi_s_buffer);
-		pi_s_buffer.clear();
-	}
+	pi_s_buffer.clear();
 	// Обработка унарных операторов             
 	auto iterator = pi_v_buffer.begin();
 	if (pi_v_buffer[0] == "-" || pi_v_buffer[0] == "+") {
@@ -70,15 +80,15 @@ vector<string> PARCER::parce_infix(string str) {
 		}
 	}
 	// Очистка буфера и возврат значения
-	vector<string> res(pi_v_buffer);
-	pi_v_buffer.clear(); pi_s_buffer.clear();
+	TQueue<string> res(pi_v_buffer);
+	pi_v_buffer.clear();
 	return res;
 }
 // --------------------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------------
 
-bool PARCER::skobochniy_check(string str) {
+bool PARCER::skobochniy_check(const string& str) {
 	const size_t n = str.size();
 	TStack<int> s(n);
 	try {
@@ -96,20 +106,12 @@ bool PARCER::skobochniy_check(string str) {
 
 double PARCER::buffer_value = 0.0;
 double PARCER::buffer_dot = 1.0;
-
-map<char, map<STATE, STATE>> PARCER::td_next{  // или можно было через много ифов
+// std::function<void(state, char)> 
+map<TYPE, map<STATE, STATE>> PARCER::td_next{ 
 	//          ST0         ST1         ST2         ST3
-	{'0', { {ST0, ST2}, {ST1, ST1}, {ST2, STX}, {ST3, ST3} } },
-	{'1', { {ST0, ST1}, {ST1, ST1}, {ST2, STX}, {ST3, ST3} } },
-	{'2', { {ST0, ST1}, {ST1, ST1}, {ST2, STX}, {ST3, ST3} } },
-	{'3', { {ST0, ST1}, {ST1, ST1}, {ST2, STX}, {ST3, ST3} } },
-	{'4', { {ST0, ST1}, {ST1, ST1}, {ST2, STX}, {ST3, ST3} } },
-	{'5', { {ST0, ST1}, {ST1, ST1}, {ST2, STX}, {ST3, ST3} } },
-	{'6', { {ST0, ST1}, {ST1, ST1}, {ST2, STX}, {ST3, ST3} } },
-	{'7', { {ST0, ST1}, {ST1, ST1}, {ST2, STX}, {ST3, ST3} } },
-	{'8', { {ST0, ST1}, {ST1, ST1}, {ST2, STX}, {ST3, ST3} } },
-	{'9', { {ST0, ST1}, {ST1, ST1}, {ST2, STX}, {ST3, ST3} } },
-	{'.', { {ST0, STX}, {ST1, ST3}, {ST2, ST3}, {ST3, STX} } }
+	{ZERO, { {ST0, ST2}, {ST1, ST1}, {ST2, STX}, {ST3, ST3} } },
+	{NUM, { {ST0, ST1}, {ST1, ST1}, {ST2, STX}, {ST3, ST3} } },
+	{DOT, { {ST0, STX}, {ST1, ST3}, {ST2, ST3}, {ST3, STX} } }
 };
 
 func_pointer PARCER::td_call(state st, char c) {
@@ -154,19 +156,89 @@ inline double PARCER::switch_char(char c) {
 	}
 }
 
-double PARCER::to_double(string str) {
+double PARCER::to_double(const string& str) {
 	buffer_dot = 1.0;
 	buffer_value = 0.0;
 
 	state st = ST0;
 	for (int i = 0; i < str.size(); ++i) {
 		td_call(st, str[i])(str[i]);
-		st = td_next[str[i]][st];
+		st = td_next[decode(str[i])][st];
+		if (st == STX) { throw str[i]; }
 	}
 
 	double res = buffer_value / buffer_dot;
 	buffer_dot = 1.0;
 	buffer_value = 0.0;
 	return res;
+}
+// --------------------------------------------------------------------------------------------
+
+// --------------------------------------------------------------------------------------------
+
+TQueue<string> PARCER::parce_postfix(const string& str) {
+	TQueue<string> inf = parce_infix(str);
+	size_t sz = inf.get_size();
+	TQueue<string> postf(sz);
+	TStack<string> st(sz);
+	string stackItem;
+	while (!inf.isEmpty()) {
+		string item = inf.pop();  // все строки менять на class lexem
+		/*type item_type = decode(item);*/
+		if (item == "(") { st.push(item); }
+		else if (item == ")") {
+			stackItem = st.pop();
+			while (stackItem != "(") {
+				postf.push(stackItem);
+				stackItem = st.pop();
+			} 
+		}
+		else if (item == "+" || item == "-" || item == "*" || item == "/") {
+			while (!st.isEmpty()) {
+				stackItem = st.top();
+				if (priority[item] <= priority[stackItem])
+					postf.push(st.pop());
+				else { break; }
+			} st.push(item);
+		}
+		else { postf.push(item); }
+	}
+	while (!st.isEmpty()) {
+		stackItem = st.pop();
+		postf.push(stackItem);
+	}
+	return postf;
+}
+
+TQueue<string> PARCER::parce_postfix(TQueue<string> inf) {
+	size_t sz = inf.get_size();
+	TQueue<string> postf(sz);
+	TStack<string> st(sz);
+	string stackItem;
+	while (!inf.isEmpty()) {
+		string item = inf.pop();
+		if (item == "(") { st.push(item); }
+		else if (item == ")") {
+			stackItem = st.pop();
+			while (stackItem != "(") {
+				postf.push(stackItem);
+				stackItem = st.pop();
+			}
+		}
+		else if (item == "+" || item == "-" || item == "*" || item == "/") {
+			while (!st.isEmpty()) {
+				stackItem = st.top();
+				if (priority[item] <= priority[stackItem])
+					postf.push(st.pop());
+				else { break; }
+			} st.push(item);
+		}
+		else { postf.push(item); }
+	}
+	while (!st.isEmpty()) {
+		stackItem = st.pop();
+		postf.push(stackItem);
+	}
+	return postf;
 }
 // --------------------------------------------------------------------------------------------
