@@ -29,9 +29,10 @@ void print_lexem_queue(ostream& ostr, TQueue<LEXEM>& q) {
 }
 
 int main() {
-	ArithmeticExpression _("(1234-745.43)+234+(-3)");
-	TQueue<LEXEM> inf = _.get_infix(), postf = _.get_postfix();
+	ArithmeticExpression _("-34+41*25");
+	TQueue<LEXEM> inf = _.get_infix();
 	print_lexem_queue(cout, inf);
 	cout << endl << endl;
+	TQueue<LEXEM> postf = _.get_postfix();
 	print_lexem_queue(cout, postf);
 } 

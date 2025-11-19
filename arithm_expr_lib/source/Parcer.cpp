@@ -1,16 +1,22 @@
 #include "ArithmeticExpression.h"
 
-#define CHAR_IN_OPS tp >= 3 && tp <= 5
+#define CHAR_IN_OPS tp >= 3 && tp <= 7
 #define CHAR_IN_INTS tp >= 0 && tp <= 2
-
-#define STATE PARCER::state
 
 #define ZERO Type::zero
 #define NUM Type::num
 #define DOT Type::dot
 #define L_BR Type::l_br
 #define R_BR Type::r_br
-#define OP Type::op
+#define BOP Type::bop
+#define MUL Type::mul
+#define DIV Type::div
+
+map<string, int> PARCER::priority{
+	{"(", 0}, {"+", 1}, {"-", 1}, {"*", 2},{"/", 2}
+};
+
+TQueue<ERROR> PARCER::last_errors;
 
 // ------------------------------- КОНЕЧНЫЙ АВТОМАТ PARCE_INFIX -------------------------------
 
@@ -35,9 +41,9 @@ TYPE PARCER::decode(char c) {
 	case ')': return R_BR;
 	case '.': return DOT;
 	case '+': 
-	case '-':
-	case '*':
-	case '/': return OP;
+	case '-': return BOP;
+	case '*': return MUL;
+	case '/': return DIV;
 	default: throw runtime_error("DECODING_ERROR: unknown char " + c);
 	}
 }
@@ -52,13 +58,13 @@ STATE PARCER::pi_next(char c) {
 func_pointer PARCER::pi_call(state st, char c) {
 	int tp = (int)decode(c);
 	if (st == ST0) {
-		if (CHAR_IN_OPS) { return Parcer::pi_f0; }
-		if (CHAR_IN_INTS) { return Parcer::pi_f1; }
+		if (CHAR_IN_OPS) { return pi_f0; }
+		if (CHAR_IN_INTS) { return pi_f1; }
 		else throw - 1;
 	}
 	else if (st == ST1) {
-		if (CHAR_IN_OPS) { return Parcer::pi_f2; }
-		if (decode) { return Parcer::pi_f3; }
+		if (CHAR_IN_OPS) { return pi_f2; }
+		if (CHAR_IN_INTS) { return pi_f3; }
 		else throw - 1;
 	}
 }
@@ -68,7 +74,7 @@ TQueue<LEXEM> PARCER::parce_infix(const string& str) {
 	pi_s_buffer.clear();
 	// Парсинг строки в вектор лексем
 	state st = ST0;
-	for (int i = 0; i < str.size(); ++i) {
+	for (size_t i = 0; i < str.size(); ++i) {
 		pi_call(st, str[i])(str[i]);
 		st = pi_next(str[i]);
 	}
@@ -77,13 +83,14 @@ TQueue<LEXEM> PARCER::parce_infix(const string& str) {
 	pi_s_buffer.clear();
 	// Обработка унарных операторов             
 	auto iterator = pi_v_buffer.begin();
-	string pvi = pi_v_buffer[0].value;
-	if (pvi == "-" || pvi == "+") {
+	Type pvi = pi_v_buffer[0].type;
+	if (pvi == BOP) {
 		pi_v_buffer.insert(iterator, lexem("0", ZERO));
 	}
+	iterator = pi_v_buffer.begin();
 	for (int i = 1; i < pi_v_buffer.size(); ++i) {
-		pvi = pi_v_buffer[i].value;
-		if (pi_v_buffer[i - 1].value == "(" && (pvi == "-" || pvi == "+")) {
+		pvi = pi_v_buffer[i].type;
+		if (pi_v_buffer[i - 1].type == L_BR && (pvi == BOP)) {
 			pi_v_buffer.insert(iterator + i, lexem("0", ZERO));
 		}
 	}
@@ -91,22 +98,6 @@ TQueue<LEXEM> PARCER::parce_infix(const string& str) {
 	TQueue<lexem> res(pi_v_buffer);
 	pi_v_buffer.clear();
 	return res;
-}
-// --------------------------------------------------------------------------------------------
-
-// --------------------------------------------------------------------------------------------
-
-bool PARCER::skobochniy_check(const string& str) {
-	const size_t n = str.size();
-	TStack<int> s(n);
-	try {
-		for (size_t i = 0; i < n; i++) {
-			if (str[i] == '(') s.push(i);
-			if (str[i] == ')') s.pop();
-			else continue;
-		} return s.isEmpty();
-	}
-	catch (...) { return false; }
 }
 // --------------------------------------------------------------------------------------------
 
@@ -126,22 +117,22 @@ func_pointer PARCER::td_call(state st, char c) {
 	int tp = (int)decode(c);
 	switch (st) {
 	case ST0:
-		if (CHAR_IN_INTS) { return PARCER::td_f0; }
-		else { return PARCER::td_f3; }
+		if (CHAR_IN_INTS) { return td_f0; }
+		else { return td_f3; }
 		break;
 	case ST1:
-		if (CHAR_IN_INTS) { return PARCER::td_f0; }
-		else { return PARCER::td_f2; }
+		if (CHAR_IN_INTS) { return td_f0; }
+		else { return td_f2; }
 		break;
 	case ST2:
-		if (CHAR_IN_INTS) { return PARCER::td_f3; }
-		else { return PARCER::td_f2; }
+		if (CHAR_IN_INTS) { return td_f3; }
+		else { return td_f2; }
 		break;
 	case ST3:
-		if (CHAR_IN_INTS) { return PARCER::td_f1; }
-		else { return PARCER::td_f3; }
+		if (CHAR_IN_INTS) { return td_f1; }
+		else { return td_f3; }
 		break;
-	default: return PARCER::td_f3;
+	default: return td_f3;
 	}
 }
 
@@ -170,7 +161,7 @@ double PARCER::to_double(const string& str) {
 	buffer_value = 0.0;
 
 	state st = ST0;
-	for (int i = 0; i < str.size(); ++i) {
+	for (size_t i = 0; i < str.size(); ++i) {
 		td_call(st, str[i])(str[i]);
 		st = td_next[decode(str[i])][st];
 		if (st == STX) { throw str[i]; }
@@ -187,40 +178,7 @@ double PARCER::to_double(const string& str) {
 
 TQueue<LEXEM> PARCER::parce_postfix(const string& str) {
 	TQueue<lexem> inf = parce_infix(str);
-	size_t sz = inf.get_size();
-	TQueue<lexem> postf(sz);
-	TStack<lexem> st(sz);
-	lexem stackItem;
-	while (!inf.isEmpty()) {
-		lexem item = inf.pop();
-		switch (item.type) {
-		case L_BR: 
-			st.push(item); 
-			break;
-		case R_BR:
-			stackItem = st.pop();
-			while (stackItem.type != L_BR) {
-				postf.push(stackItem);
-				stackItem = st.pop();
-			} 
-			break;
-		case OP:
-			while (!st.isEmpty()) {
-				stackItem = st.top();
-				if (priority[item.value] <= priority[stackItem.value])
-					postf.push(st.pop());
-				else { break; }
-			} st.push(item); 
-			break;
-		default:
-			postf.push(item);
-		}
-	}
-	while (!st.isEmpty()) {
-		stackItem = st.pop();
-		postf.push(stackItem);
-	}
-	return postf;
+	return parce_postfix(inf);
 }
 
 TQueue<LEXEM> PARCER::parce_postfix(TQueue<LEXEM> inf) {
@@ -241,7 +199,9 @@ TQueue<LEXEM> PARCER::parce_postfix(TQueue<LEXEM> inf) {
 				stackItem = st.pop();
 			}
 			break;
-		case OP:
+		case MUL:
+		case DIV:
+		case BOP:
 			while (!st.isEmpty()) {
 				stackItem = st.top();
 				if (priority[item.value] <= priority[stackItem.value])
