@@ -1,23 +1,27 @@
 #include "ArithmeticExpression.h"
 
-#define CHAR_IN_OPS decode(c) >= 3 && decode(c) <= 5
-#define CHAR_IN_INTS decode(c) >= 0 && decode(c) <= 2
- 
-#define PARCER ArithmeticExpression::Parcer
+#define CHAR_IN_OPS tp >= 3 && tp <= 5
+#define CHAR_IN_INTS tp >= 0 && tp <= 2
 
 #define STATE PARCER::state
-#define TYPE PARCER::type
+
+#define ZERO Type::zero
+#define NUM Type::num
+#define DOT Type::dot
+#define L_BR Type::l_br
+#define R_BR Type::r_br
+#define OP Type::op
 
 // ------------------------------- КОНЕЧНЫЙ АВТОМАТ PARCE_INFIX -------------------------------
 
 string PARCER::pi_s_buffer;
-vector<string> PARCER::pi_v_buffer;
+vector<LEXEM> PARCER::pi_v_buffer;
 
-inline void PARCER::pi_f0(char c) { pi_v_buffer.push_back(string(1, c)); }
+inline void PARCER::pi_f0(char c) { pi_v_buffer.push_back(lexem(string(1, c), decode(c))); }
 inline void PARCER::pi_f1(char c) { pi_s_buffer = string(1, c); }
 inline void PARCER::pi_f2(char c) {
-	pi_v_buffer.push_back(pi_s_buffer);
-	pi_v_buffer.push_back(string(1, c));
+	pi_v_buffer.push_back(lexem(pi_s_buffer, NUM));
+	pi_v_buffer.push_back(lexem(string(1, c), decode(c)));
 	pi_s_buffer.clear();
 }
 inline void PARCER::pi_f3(char c) { pi_s_buffer += c; }
@@ -39,12 +43,14 @@ TYPE PARCER::decode(char c) {
 }
 
 STATE PARCER::pi_next(char c) {
+	int tp = (int)decode(c);
 	if (CHAR_IN_OPS) { return ST0; }
 	if (CHAR_IN_INTS) { return ST1; }
 	else throw -1;
 }
 
 func_pointer PARCER::pi_call(state st, char c) {
+	int tp = (int)decode(c);
 	if (st == ST0) {
 		if (CHAR_IN_OPS) { return Parcer::pi_f0; }
 		if (CHAR_IN_INTS) { return Parcer::pi_f1; }
@@ -57,7 +63,7 @@ func_pointer PARCER::pi_call(state st, char c) {
 	}
 }
 
-TQueue<string> PARCER::parce_infix(const string& str) {
+TQueue<LEXEM> PARCER::parce_infix(const string& str) {
 	pi_v_buffer.clear();
 	pi_s_buffer.clear();
 	// Парсинг строки в вектор лексем
@@ -66,21 +72,23 @@ TQueue<string> PARCER::parce_infix(const string& str) {
 		pi_call(st, str[i])(str[i]);
 		st = pi_next(str[i]);
 	}
-	if (!pi_s_buffer.empty()) 
-		pi_v_buffer.push_back(pi_s_buffer);
+	if (!pi_s_buffer.empty())
+		pi_v_buffer.push_back(lexem(pi_s_buffer, NUM));
 	pi_s_buffer.clear();
 	// Обработка унарных операторов             
 	auto iterator = pi_v_buffer.begin();
-	if (pi_v_buffer[0] == "-" || pi_v_buffer[0] == "+") {
-		pi_v_buffer.insert(iterator, "0");
+	string pvi = pi_v_buffer[0].value;
+	if (pvi == "-" || pvi == "+") {
+		pi_v_buffer.insert(iterator, lexem("0", ZERO));
 	}
 	for (int i = 1; i < pi_v_buffer.size(); ++i) {
-		if (pi_v_buffer[i - 1] == "(" && (pi_v_buffer[i] == "-" || pi_v_buffer[i] == "+")) {
-			pi_v_buffer.insert(iterator + i, "0");
+		pvi = pi_v_buffer[i].value;
+		if (pi_v_buffer[i - 1].value == "(" && (pvi == "-" || pvi == "+")) {
+			pi_v_buffer.insert(iterator + i, lexem("0", ZERO));
 		}
 	}
 	// Очистка буфера и возврат значения
-	TQueue<string> res(pi_v_buffer);
+	TQueue<lexem> res(pi_v_buffer);
 	pi_v_buffer.clear();
 	return res;
 }
@@ -115,6 +123,7 @@ map<TYPE, map<STATE, STATE>> PARCER::td_next{
 };
 
 func_pointer PARCER::td_call(state st, char c) {
+	int tp = (int)decode(c);
 	switch (st) {
 	case ST0:
 		if (CHAR_IN_INTS) { return PARCER::td_f0; }
@@ -176,32 +185,36 @@ double PARCER::to_double(const string& str) {
 
 // --------------------------------------------------------------------------------------------
 
-TQueue<string> PARCER::parce_postfix(const string& str) {
-	TQueue<string> inf = parce_infix(str);
+TQueue<LEXEM> PARCER::parce_postfix(const string& str) {
+	TQueue<lexem> inf = parce_infix(str);
 	size_t sz = inf.get_size();
-	TQueue<string> postf(sz);
-	TStack<string> st(sz);
-	string stackItem;
+	TQueue<lexem> postf(sz);
+	TStack<lexem> st(sz);
+	lexem stackItem;
 	while (!inf.isEmpty()) {
-		string item = inf.pop();  // все строки менять на class lexem
-		/*type item_type = decode(item);*/
-		if (item == "(") { st.push(item); }
-		else if (item == ")") {
+		lexem item = inf.pop();
+		switch (item.type) {
+		case L_BR: 
+			st.push(item); 
+			break;
+		case R_BR:
 			stackItem = st.pop();
-			while (stackItem != "(") {
+			while (stackItem.type != L_BR) {
 				postf.push(stackItem);
 				stackItem = st.pop();
 			} 
-		}
-		else if (item == "+" || item == "-" || item == "*" || item == "/") {
+			break;
+		case OP:
 			while (!st.isEmpty()) {
 				stackItem = st.top();
-				if (priority[item] <= priority[stackItem])
+				if (priority[item.value] <= priority[stackItem.value])
 					postf.push(st.pop());
 				else { break; }
-			} st.push(item);
+			} st.push(item); 
+			break;
+		default:
+			postf.push(item);
 		}
-		else { postf.push(item); }
 	}
 	while (!st.isEmpty()) {
 		stackItem = st.pop();
@@ -210,30 +223,35 @@ TQueue<string> PARCER::parce_postfix(const string& str) {
 	return postf;
 }
 
-TQueue<string> PARCER::parce_postfix(TQueue<string> inf) {
+TQueue<LEXEM> PARCER::parce_postfix(TQueue<LEXEM> inf) {
 	size_t sz = inf.get_size();
-	TQueue<string> postf(sz);
-	TStack<string> st(sz);
-	string stackItem;
+	TQueue<lexem> postf(sz);
+	TStack<lexem> st(sz);
+	lexem stackItem;
 	while (!inf.isEmpty()) {
-		string item = inf.pop();
-		if (item == "(") { st.push(item); }
-		else if (item == ")") {
+		lexem item = inf.pop();
+		switch (item.type) {
+		case L_BR:
+			st.push(item);
+			break;
+		case R_BR:
 			stackItem = st.pop();
-			while (stackItem != "(") {
+			while (stackItem.type != L_BR) {
 				postf.push(stackItem);
 				stackItem = st.pop();
 			}
-		}
-		else if (item == "+" || item == "-" || item == "*" || item == "/") {
+			break;
+		case OP:
 			while (!st.isEmpty()) {
 				stackItem = st.top();
-				if (priority[item] <= priority[stackItem])
+				if (priority[item.value] <= priority[stackItem.value])
 					postf.push(st.pop());
 				else { break; }
 			} st.push(item);
+			break;
+		default:
+			postf.push(item);
 		}
-		else { postf.push(item); }
 	}
 	while (!st.isEmpty()) {
 		stackItem = st.pop();

@@ -14,4 +14,3 @@ ArithmeticExpression::ArithmeticExpression(string _infix) {
 double ArithmeticExpression::calculate() {
 	return 0.0;
 }
-
