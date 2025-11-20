@@ -2,6 +2,7 @@
 
 LEXEM::lexem(string s, Type t) { value = s; type = t; }
 ERROR::error(size_t i, string v) { index = i; value = v; }
+ERROR::error(size_t i, char c) { index = i; value = string(1, c); }
 
 ostream& operator<<(ostream& ostr, const LEXEM& lex) {
 	ostr << "{ " << lex.value << ", " << lex.type << " }";

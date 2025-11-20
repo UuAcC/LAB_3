@@ -16,7 +16,14 @@ map<string, int> PARCER::priority{
 	{"(", 0}, {"+", 1}, {"-", 1}, {"*", 2},{"/", 2}
 };
 
+string PARCER::last_func;
 TQueue<ERROR> PARCER::last_errors;
+using parcer_fp = void(*)(char);
+
+void PARCER::print_error_message() {
+	cerr << last_func << " failure:" << endl;
+	cerr << "Errors: " << last_errors << endl;
+}
 
 // ------------------------------- КОНЕЧНЫЙ АВТОМАТ PARCE_INFIX -------------------------------
 
@@ -44,7 +51,7 @@ TYPE PARCER::decode(char c) {
 	case '-': return BOP;
 	case '*': return MUL;
 	case '/': return DIV;
-	default: throw runtime_error("DECODING_ERROR: unknown char " + c);
+	default: throw c;
 	}
 }
 
@@ -55,7 +62,7 @@ STATE PARCER::pi_next(char c) {
 	else throw -1;
 }
 
-func_pointer PARCER::pi_call(state st, char c) {
+parcer_fp PARCER::pi_call(state st, char c) {
 	int tp = (int)decode(c);
 	if (st == ST0) {
 		if (CHAR_IN_OPS) { return pi_f0; }
@@ -70,30 +77,26 @@ func_pointer PARCER::pi_call(state st, char c) {
 }
 
 TQueue<LEXEM> PARCER::parce_infix(const string& str) {
+	last_func = __func__;
+	last_errors.clear();
+	TQueue<ERROR> curr_errors(str.size());
+
 	pi_v_buffer.clear();
 	pi_s_buffer.clear();
 	// Парсинг строки в вектор лексем
 	state st = ST0;
 	for (size_t i = 0; i < str.size(); ++i) {
-		pi_call(st, str[i])(str[i]);
-		st = pi_next(str[i]);
+		if (str[i] == ' ') continue;
+		try { 
+			pi_call(st, str[i])(str[i]); 
+			st = pi_next(str[i]);
+		}
+		catch (char c) { curr_errors.push(error(i, c)); }
+		
 	}
 	if (!pi_s_buffer.empty())
 		pi_v_buffer.push_back(lexem(pi_s_buffer, NUM));
 	pi_s_buffer.clear();
-	// Обработка унарных операторов             
-	auto iterator = pi_v_buffer.begin();
-	Type pvi = pi_v_buffer[0].type;
-	if (pvi == BOP) {
-		pi_v_buffer.insert(iterator, lexem("0", ZERO));
-	}
-	iterator = pi_v_buffer.begin();
-	for (int i = 1; i < pi_v_buffer.size(); ++i) {
-		pvi = pi_v_buffer[i].type;
-		if (pi_v_buffer[i - 1].type == L_BR && (pvi == BOP)) {
-			pi_v_buffer.insert(iterator + i, lexem("0", ZERO));
-		}
-	}
 	// Очистка буфера и возврат значения
 	TQueue<lexem> res(pi_v_buffer);
 	pi_v_buffer.clear();
@@ -113,7 +116,7 @@ map<TYPE, map<STATE, STATE>> PARCER::td_next{
 	{DOT, { {ST0, STX}, {ST1, ST3}, {ST2, ST3}, {ST3, STX} } }
 };
 
-func_pointer PARCER::td_call(state st, char c) {
+parcer_fp PARCER::td_call(state st, char c) {
 	int tp = (int)decode(c);
 	switch (st) {
 	case ST0:
@@ -157,31 +160,52 @@ inline double PARCER::switch_char(char c) {
 }
 
 double PARCER::to_double(const string& str) {
+	last_func = __func__;
+	last_errors.clear();
+	TQueue<ERROR> curr_errors(str.size());
+
 	buffer_dot = 1.0;
 	buffer_value = 0.0;
 
 	state st = ST0;
 	for (size_t i = 0; i < str.size(); ++i) {
-		td_call(st, str[i])(str[i]);
-		st = td_next[decode(str[i])][st];
-		if (st == STX) { throw str[i]; }
+		try { 
+			td_call(st, str[i])(str[i]); 
+			st = td_next[decode(str[i])][st];
+		}
+		catch (char c) { curr_errors.push(error(i, c)); }
+		
+		/*if (st == STX) { curr_errors.push(error(i, str[i])); }*/
 	}
 
 	double res = buffer_value / buffer_dot;
-	buffer_dot = 1.0;
-	buffer_value = 0.0;
+	last_errors = curr_errors;
 	return res;
 }
 // --------------------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------------
 
-TQueue<LEXEM> PARCER::parce_postfix(const string& str) {
-	TQueue<lexem> inf = parce_infix(str);
-	return parce_postfix(inf);
+void PARCER::unary_handle(TQueue<LEXEM>& _infix) noexcept {
+	vector<lexem> buffer(_infix.to_vector());          
+	auto iterator = buffer.begin();
+	Type pvi = buffer[0].type;
+	if (pvi == BOP) {
+		buffer.insert(iterator, lexem("0", ZERO));
+	}
+	iterator = buffer.begin();
+	for (int i = 1; i < buffer.size(); ++i) {
+		pvi = buffer[i].type;
+		if (buffer[i - 1].type == L_BR && (pvi == BOP)) {
+			buffer.insert(iterator + i, lexem("0", ZERO));
+		}
+	}
+	_infix = TQueue<lexem>(buffer);
 }
 
-TQueue<LEXEM> PARCER::parce_postfix(TQueue<LEXEM> inf) {
+TQueue<LEXEM> PARCER::parce_postfix(const TQueue<LEXEM>& in) {
+	TQueue<lexem> inf(in); unary_handle(inf);
+
 	size_t sz = inf.get_size();
 	TQueue<lexem> postf(sz);
 	TStack<lexem> st(sz);

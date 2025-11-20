@@ -29,10 +29,17 @@ void print_lexem_queue(ostream& ostr, TQueue<LEXEM>& q) {
 }
 
 int main() {
-	ArithmeticExpression _("-34+41*25");
-	TQueue<LEXEM> inf = _.get_infix();
-	print_lexem_queue(cout, inf);
-	cout << endl << endl;
-	TQueue<LEXEM> postf = _.get_postfix();
-	print_lexem_queue(cout, postf);
+	string str; /*cin >> str;*/ str = "-)-3242 + 343  - 2723.4353";
+
+	ArithmeticExpression _(str);
+	bool run_res = _.run_syntaxer();
+	if (run_res) {
+		cout << endl << endl;
+		TQueue<LEXEM> inf = _.get_q_infix();
+		print_lexem_queue(cout, inf);
+		cout << endl << endl;
+		TQueue<LEXEM> postf = _.get_q_postfix();
+		print_lexem_queue(cout, postf);
+	}
+	return 0;
 } 

@@ -6,16 +6,16 @@
 #include "TStack.h"
 #include "TQueue.h"
 
-using namespace std;
-using func_pointer = void(*)(char);
-
 #define PARCER ArithmeticExpression::Parcer
 #define SYNTAXER ArithmeticExpression::Syntaxer
 
 #define TYPE ArithmeticExpression::Type
 #define LEXEM ArithmeticExpression::lexem
-#define ERROR ArithmeticExpression::error
+
 #define STATE ArithmeticExpression::state
+#define ERROR ArithmeticExpression::error
+
+using namespace std;
 
 class ArithmeticExpression {
 public:
@@ -26,21 +26,25 @@ public:
 		string value; Type type;
 		lexem(string s = "0", Type t = Type::zero);
 	};
+	friend ostream& operator<<(ostream& ostr, const LEXEM& lex);
+	friend ostream& operator<<(ostream& ostr, const TYPE& tp);
+private:
+	// Состояния конечных автоматов, STX - состояние для throw.
+	enum state { ST0, ST1, ST2, ST3, STX };
 	// Структура, хранящая индекс ошибочной лексемы и ее значение.
 	struct error {
 		size_t index; string value;
 		error(size_t i = 0, string v = "(A)");
+		error(size_t i, char c);
 	};
-	friend ostream& operator<<(ostream& ostr, const LEXEM& lex);
-	friend ostream& operator<<(ostream& ostr, const TYPE& tp);
 	friend ostream& operator<<(ostream& ostr, const ERROR& er);
-private:
-	// Состояния конечных автоматов, STX - состояние для throw.
-	enum state { ST0, ST1, ST2, ST3, STX };
 	// Класс со static функциями и полями, выполняющий парсинг строки на лексемы и лексический анализ.
 	class Parcer {
+		// Название последней выполненной функции.
+		static string last_func;
 		// Очередь ошибок, полученных в ходе выполнения последней вызванной функции.
-		static TQueue<error> last_errors;
+		static TQueue<ERROR> last_errors;
+
 		// Словарь операций с их приоритетами.
 		static map<string, int> priority;
 		// Функция, определяющая, чем является входной символ.
@@ -67,7 +71,7 @@ private:
 
 		// Возвращает указатель на функцию, которую должен выполнить 
 		// конечный автомат parce_infix в данном случае.
-		static func_pointer pi_call(state st, char c);
+		static void (*pi_call(state st, char c))(char);
 
 		// Функции конечного автомата для parce_infix.
 
@@ -100,9 +104,8 @@ private:
 		// Возвращает следующее состояние конечного автомата to_double.
 		static map<TYPE, map<state, state>> td_next;
 
-		// Возвращает указатель на функцию, которую должен выполнить 
-		// конечный автомат to_double в данном случае.
-		static func_pointer td_call(state st, char c);
+		// Возвращает указатель на функцию, которую должен выполнить конечный автомат to_double в данном случае.
+		static void (*td_call(state st, char c))(char);
 
 		// Функции конечного автомата для to_double.
 
@@ -111,75 +114,79 @@ private:
 		static inline void td_f2(char c);
 		static inline void td_f3(char c);
 		static inline double switch_char(char c);
+		// --------------------------------------------------------------------------------------------
 
+		// Функция, обрабатывающая унарные операторы в очереди лексем инфиксной формы.
+		static void unary_handle(TQueue<LEXEM>& _infix) noexcept;
 	public:
+		// Выводит информацию об ошибках в последней выполненной функции.
+		static void print_error_message();
 		// Конечный автомат: вход - строка арифм. выражения, выход - очередь её лексем.
 		static TQueue<LEXEM> parce_infix(const string& str);
-		// Принимает на вход строку и возвращает очередь с постфиксной записью ее лексем.
-		static TQueue<LEXEM> parce_postfix(const string& str);
 		// Принимает на вход очередь с инфиксной записью лексем и возвращает постфиксную запись этой очереди.
-		static TQueue<LEXEM> parce_postfix(TQueue<LEXEM> que);
+		static TQueue<LEXEM> parce_postfix(const TQueue<LEXEM>& que);
 		// Конечный автомат, который переводит строку в число.
 		static double to_double(const string& str);
 	};
-	// Класс со static функциями и полями, выполняющий синтаксический анализ.
+	// Класс со static функциями и полями, выполняющий синтаксический анализ инфиксной формы арифметического выражения.
 	class Syntaxer {
+		// Название последней выполненной функции.
+		static string last_func;
 		// Очередь ошибок, полученных в ходе выполнения последней вызванной функции.
-		static TQueue<error> last_errors;
+		static TQueue<ERROR> last_errors;
+
 		// --------------------------------------------------------------------------------------------
 		//        Таблицы для конечного автомата syntax_check:
 		// 
-		//    |------|--------|---|---|--------|---|---|---|
-		//    | next | [+, -] | * | / | [1..9] | 0 | ( | ) |
-		//    |------|--------|---|---|--------|---|---|---|
-		//    | ST0  |   ST2  |STx|STx|  ST1   |ST1|ST0|STx|
-		//    |------|--------|---|---|--------|---|---|---|
-		//    | ST1  |   ST2  |ST2|ST3|  STx   |STx|STx|ST1|
-		//    |------|--------|---|---|--------|---|---|---|
-		//    | ST2  |   STx  |STx|STx|  ST1   |ST1|ST0|STx|
-		//    |------|--------|---|---|--------|---|---|---|
-		//    | ST3  |   STx  |STx|STx|  ST1   |STx|ST0|STx|
-		//    |------|--------|---|---|--------|---|---|---|
+		//    |------|--------|---|---|--------|---|---|---|    |------|--------|---|---|--------|---|---|---|
+		//    | next | [+, -] | * | / | [1..9] | 0 | ( | ) |    | call | [+, -] | * | / | [1..9] | 0 | ( | ) |   
+		//    |------|--------|---|---|--------|---|---|---|    |------|--------|---|---|--------|---|---|---|
+		//    | ST0  |   ST2  |STx|STx|  ST1   |ST1|ST0|STx|    | ST0  |   f0   |f1 |f1 |  f0    |f0 |f0 |f1 |
+		//    |------|--------|---|---|--------|---|---|---|    |------|--------|---|---|--------|---|---|---|
+		//    | ST1  |   ST2  |ST2|ST3|  STx   |STx|STx|ST1|    | ST1  |   f0   |f0 |f0 |  f1    |f1 |f1 |f0 |
+		//    |------|--------|---|---|--------|---|---|---|    |------|--------|---|---|--------|---|---|---|
+		//    | ST2  |   STx  |STx|STx|  ST1   |ST1|ST0|STx|    | ST2  |   f1   |f1 |f1 |  f0    |f0 |f0 |f1 |
+		//    |------|--------|---|---|--------|---|---|---|    |------|--------|---|---|--------|---|---|---|
+		//    | ST3  |   STx  |STx|STx|  ST1   |STx|ST0|STx|    | ST3  |   f1   |f1 |f1 |  f0    |f1 |f0 |f1 |
+		//    |------|--------|---|---|--------|---|---|---|    |------|--------|---|---|--------|---|---|---|
 
-		//    |------|--------|---|---|--------|---|---|---|
-		//    | call | [+, -] | * | / | [1..9] | 0 | ( | ) |
-		//    |------|--------|---|---|--------|---|---|---|
-		//    | ST0  |   f0   |f1 |f1 |  f0    |f0 |f0 |f1 |
-		//    |------|--------|---|---|--------|---|---|---|
-		//    | ST1  |   f0   |f0 |f0 |  f1    |f1 |f1 |f0 |
-		//    |------|--------|---|---|--------|---|---|---|
-		//    | ST2  |   f1   |f1 |f1 |  f0    |f0 |f0 |f1 |
-		//    |------|--------|---|---|--------|---|---|---|
-		//    | ST3  |   f1   |f1 |f1 |  f0    |f1 |f0 |f1 |
-		//    |------|--------|---|---|--------|---|---|---|
-
-		// Возвращает указатель на функцию из sc_funcs, которую должен выполнить 
-		// конечный автомат syntax_check в данном случае.
-		static func_pointer sc_call(STATE st, TYPE tp);
+		// Возвращает указатель на функцию из sc_funcs, которую должен выполнить конечный автомат syntax_check в данном случае.
+		static void (*sc_call(STATE st, TYPE tp))(LEXEM);
 		// Массив, в каждой ячейке которого лежит указатель на функцию автомата syntax_check.
-		static func_pointer sc_funcs[];
+		static void (*sc_funcs[])(LEXEM);
 
-		// Возвращает состояние из sc_states, на которое должен перейти
-		// конечный автомат syntax_check в данном случае.
+		// Возвращает состояние из sc_states, на которое должен перейти конечный автомат syntax_check в данном случае.
 		static STATE sc_next(STATE st, TYPE tp);
 		// Массив, в каждой ячейке которого лежит состояние автомата syntax_check.
 		static STATE sc_states[];
 
 		// Функции конечного автомата для syntax_check.
 
-		static inline void sc_f0(char c);
-		static inline void sc_f1(char c);
+		static inline void sc_f0(LEXEM lex);
+		static inline void sc_f1(LEXEM lex);
 	public:
+		// Выводит информацию об ошибках в последней выполненной функции.
+		static void print_error_message();
 		// Проверяет арифметическое выражение со скобками на корректность расстановки скобок.
 		static bool skobochniy_check(const string& str);
+		// Выполняет синтаксический анализ арифметического выражения.
+		static bool syntax_check(TQueue<LEXEM> que);
 	};
 private:
-	TQueue<lexem> infix; // Инфиксная форма записи, переведенная в вектор строк.
-	TQueue<lexem> postfix; // Постфиксная форма записи, переведенная в вектор строк.
+	string s_infix; // Инфиксная форма записи арифметического выражения.
+	TQueue<lexem> q_infix; // Инфиксная форма записи, переведенная в вектор строк.
+	TQueue<lexem> q_postfix; // Постфиксная форма записи, переведенная в вектор строк.
 public:
 	ArithmeticExpression(string _infix);
-	inline TQueue<lexem> get_infix() const { return infix; }
-	inline TQueue<lexem> get_postfix() const { return postfix; }
+	inline string get_s_infix() const { return s_infix; }
+	inline TQueue<lexem> get_q_infix() const { return q_infix; }
+	inline TQueue<lexem> get_q_postfix() {
+		if (q_postfix.isEmpty())
+			q_postfix = Parcer::parce_postfix(q_infix);
+		return q_postfix;
+	}
+	// Функция, выполняющая все проверки синтаксиса, возвращает true <=> все проверки пройдены.
+	bool run_syntaxer();
 	// Cобственно вычисление значения выражения.
 	double calculate();
 };

@@ -13,10 +13,18 @@ class TQueue {
 	}
 public:
 	TQueue(size_t n = 1) { size = n + 1; arr = new T[size]; s = 0; f = size - 1; }
+	~TQueue() { delete[] arr; }
+
 	TQueue(const std::vector<T>& vec) : TQueue(vec.size()) {
 		for (size_t i = 0; i < size - 1; ++i) { push(vec[i]); }
 	}
-	~TQueue() { delete[] arr; }
+	std::vector<T> to_vector() {
+		std::vector<T> res;
+		for (size_t i = s; i != next(f); i = next(i)) {
+			res.push_back(arr[i]);
+		}
+		return res;
+	}
 
 	TQueue(const TQueue& other) {
 		size = other.size;
