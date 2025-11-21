@@ -79,6 +79,10 @@ public:
 		s = next(s);
 		return res;
 	}
+	const T& top() {
+		if (this->isEmpty()) throw - 1;
+		return arr[s];
+	}
 
 	size_t get_size() const { return size - 1; }
 	void clear() { delete[] arr; arr = new T[size]; s = 0; f = size - 1; }

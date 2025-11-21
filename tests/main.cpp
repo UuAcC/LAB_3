@@ -28,18 +28,24 @@ void print_lexem_queue(ostream& ostr, TQueue<LEXEM>& q) {
 	ostr << "types: " << tps;
 }
 
+// ((325 - 45.231) * 78 - 23434 / 1.00)
+
 int main() {
-	string str; /*cin >> str;*/ str = "-)-3242 + 343  - 2723.4353";
+	string str;  
+	getline(cin, str);
+	/*str = "-)-3242  (+ 3*(43  - 2723).4353)";*/
 
 	ArithmeticExpression _(str);
-	bool run_res = _.run_syntaxer();
+	bool run_res = _.run_analyzer();
 	if (run_res) {
-		cout << endl << endl;
+		cout << endl;
 		TQueue<LEXEM> inf = _.get_q_infix();
 		print_lexem_queue(cout, inf);
 		cout << endl << endl;
 		TQueue<LEXEM> postf = _.get_q_postfix();
 		print_lexem_queue(cout, postf);
+		cout << endl << endl;
+		cout << "Result: " << _.calculate();
 	}
 	return 0;
 } 

@@ -7,7 +7,7 @@
 #include "TQueue.h"
 
 #define PARCER ArithmeticExpression::Parcer
-#define SYNTAXER ArithmeticExpression::Syntaxer
+#define ANALYZER ArithmeticExpression::Analyzer
 
 #define TYPE ArithmeticExpression::Type
 #define LEXEM ArithmeticExpression::lexem
@@ -16,6 +16,8 @@
 #define ERROR ArithmeticExpression::error
 
 using namespace std;
+// Указатель на бинарную арифметическую функцию.
+using arithm_fp = double(*)(double, double);
 
 class ArithmeticExpression {
 public:
@@ -49,6 +51,8 @@ private:
 		static map<string, int> priority;
 		// Функция, определяющая, чем является входной символ.
 		static TYPE decode(char c);
+		// Функция, определяющая, является ли значение лексемы нулем.
+		static TYPE type_num(string str);
 
 		// --------------------------------------------------------------------------------------------
 		//                Таблицы для конечного автомата parce_infix:
@@ -119,8 +123,12 @@ private:
 		// Функция, обрабатывающая унарные операторы в очереди лексем инфиксной формы.
 		static void unary_handle(TQueue<LEXEM>& _infix) noexcept;
 	public:
+		// Возвращает, были ли ошибки в исполнении последней функции.
+		static inline bool errors_occured() { return !last_errors.isEmpty(); };
 		// Выводит информацию об ошибках в последней выполненной функции.
 		static void print_error_message();
+		// Удаляет из строки все пробелы.
+		static string delete_spaces(const string& str);
 		// Конечный автомат: вход - строка арифм. выражения, выход - очередь её лексем.
 		static TQueue<LEXEM> parce_infix(const string& str);
 		// Принимает на вход очередь с инфиксной записью лексем и возвращает постфиксную запись этой очереди.
@@ -129,7 +137,7 @@ private:
 		static double to_double(const string& str);
 	};
 	// Класс со static функциями и полями, выполняющий синтаксический анализ инфиксной формы арифметического выражения.
-	class Syntaxer {
+	class Analyzer {
 		// Название последней выполненной функции.
 		static string last_func;
 		// Очередь ошибок, полученных в ходе выполнения последней вызванной функции.
@@ -165,10 +173,14 @@ private:
 		static inline void sc_f0(LEXEM lex);
 		static inline void sc_f1(LEXEM lex);
 	public:
+		// Возвращает, были ли ошибки в исполнении последней функции.
+		static inline bool errors_occured() { return !last_errors.isEmpty(); };
 		// Выводит информацию об ошибках в последней выполненной функции.
 		static void print_error_message();
 		// Проверяет арифметическое выражение со скобками на корректность расстановки скобок.
 		static bool skobochniy_check(const string& str);
+		// Выполняет лексический анализ арифметического выражения (использует PARCER::to_double).
+		static bool lexic_check(TQueue<LEXEM> que);
 		// Выполняет синтаксический анализ арифметического выражения.
 		static bool syntax_check(TQueue<LEXEM> que);
 	};
@@ -176,17 +188,27 @@ private:
 	string s_infix; // Инфиксная форма записи арифметического выражения.
 	TQueue<lexem> q_infix; // Инфиксная форма записи, переведенная в вектор строк.
 	TQueue<lexem> q_postfix; // Постфиксная форма записи, переведенная в вектор строк.
+
+	// Арифметические функции, вызываемые в методе calculate с помощью ae_call.
+
+	static inline double add(double arg1, double arg2) { return arg1 + arg2; }
+	static inline double sub(double arg1, double arg2) { return arg1 - arg2; }
+	static inline double mul(double arg1, double arg2) { return arg1 * arg2; }
+	static inline double div(double arg1, double arg2) { return arg1 / arg2; }
+
+	// Возвращает указатель на арифм. функцию, соответствующую входной операции.
+	arithm_fp ae_call(string str);
 public:
 	ArithmeticExpression(string _infix);
 	inline string get_s_infix() const { return s_infix; }
 	inline TQueue<lexem> get_q_infix() const { return q_infix; }
-	inline TQueue<lexem> get_q_postfix() {
+	inline const TQueue<lexem>& get_q_postfix() {
 		if (q_postfix.isEmpty())
 			q_postfix = Parcer::parce_postfix(q_infix);
 		return q_postfix;
 	}
 	// Функция, выполняющая все проверки синтаксиса, возвращает true <=> все проверки пройдены.
-	bool run_syntaxer();
+	bool run_analyzer();
 	// Cобственно вычисление значения выражения.
 	double calculate();
 };

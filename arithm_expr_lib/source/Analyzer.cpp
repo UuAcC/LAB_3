@@ -1,17 +1,20 @@
 #include "ArithmeticExpression.h"
 
-string SYNTAXER::last_func;
-TQueue<ERROR> SYNTAXER::last_errors;
+string ANALYZER::last_func;
+TQueue<ERROR> ANALYZER::last_errors;
 using syntaxer_fp = void(*)(LEXEM);
 
-void SYNTAXER::print_error_message() {
-	cerr << last_func << " failure:" << endl;
-	cerr << "Errors: " << last_errors << endl;
+void ANALYZER::print_error_message() {
+	cerr << last_func;
+	if (errors_occured()) {
+		cerr << " failure:" << endl;
+		cerr << "Errors: " << last_errors << endl;
+	} else { cerr << " successful." << endl; }
 }
 
 // --------------------------------------------------------------------------------------------
 
-bool SYNTAXER::skobochniy_check(const string& str) {
+bool ANALYZER::skobochniy_check(const string& str) {
 	last_func = __func__;
 	last_errors.clear();
 
@@ -44,49 +47,73 @@ bool SYNTAXER::skobochniy_check(const string& str) {
 }
 // --------------------------------------------------------------------------------------------
 
+// --------------------------------------------------------------------------------------------
+
+bool ANALYZER::lexic_check(TQueue<LEXEM> que) {
+	last_func = __func__;
+	last_errors.clear();
+	TQueue<error> curr_errors(que.get_size());
+
+	lexem curr; size_t i = 0;
+	while (!que.isEmpty()) {
+		curr = que.pop();
+		if (curr.type != TYPE::zero && curr.type != TYPE::num) {
+			++i; continue;
+		}
+		PARCER::to_double(curr.value);
+		if (PARCER::errors_occured()) 
+			curr_errors.push(error(i, curr.value));
+		++i;
+	}
+
+	last_errors = curr_errors;
+	return curr_errors.isEmpty();
+}
+// --------------------------------------------------------------------------------------------
+
 // ------------------------------- КОНЕЧНЫЙ АВТОМАТ SYNTAX_CHECK ------------------------------
 
-inline void SYNTAXER::sc_f0(LEXEM lex) { /* ничего не делает */ }
-inline void SYNTAXER::sc_f1(LEXEM lex) { throw lex; }
+inline void ANALYZER::sc_f0(LEXEM lex) { /* ничего не делает */ }
+inline void ANALYZER::sc_f1(LEXEM lex) { throw lex; }
 
-syntaxer_fp SYNTAXER::sc_call(STATE st, TYPE tp) {
+syntaxer_fp ANALYZER::sc_call(STATE st, TYPE tp) {
 	return sc_funcs[(int)st * 7 + (int)tp - 1];
 }
 
-syntaxer_fp SYNTAXER::sc_funcs[28]{
+syntaxer_fp ANALYZER::sc_funcs[28]{
 	sc_f0, sc_f0, sc_f0, sc_f1, sc_f0, sc_f1, sc_f1,
 	sc_f1, sc_f1, sc_f1, sc_f0, sc_f0, sc_f0, sc_f0,
 	sc_f0, sc_f0, sc_f0, sc_f1, sc_f1, sc_f1, sc_f1,
 	sc_f1, sc_f0, sc_f0, sc_f1, sc_f1, sc_f1, sc_f1
 };
 
-STATE SYNTAXER::sc_next(STATE st, TYPE tp) {
+STATE ANALYZER::sc_next(STATE st, TYPE tp) {
 	return sc_states[(int)st * 7 + (int)tp - 1];
 }
 
-STATE SYNTAXER::sc_states[28]{
+STATE ANALYZER::sc_states[28]{
 	ST1, ST1, ST0, STX, ST2, STX, STX,
 	STX, STX, STX, ST1, ST2, ST2, ST3,
 	ST1, ST1, ST0, STX, STX, STX, STX,
 	STX, ST1, ST0, STX, STX, STX, STX,
 };
 
-bool SYNTAXER::syntax_check(TQueue<LEXEM> que) {
+bool ANALYZER::syntax_check(TQueue<LEXEM> que) {
 	last_func = __func__;
 	last_errors.clear();
 	TQueue<error> curr_errors(que.get_size());
-	size_t i = 0; lexem curr;
+	size_t i = -1; lexem curr;
 	state st = ST0;
 	while (!que.isEmpty()) {
-		curr = que.pop();
+		++i; curr = que.pop();
 		try { 
 			sc_call(st, curr.type)(curr); 
 			st = sc_next(st, curr.type);
 		}
 		catch (const lexem& lex) { curr_errors.push(error(i, curr.value)); }
-		i++;
 	}
-	if (st != ST1) { curr_errors.push(error(i, curr.value)); }
+	if (st != ST1 && (curr_errors.top().index != i)) { curr_errors.push(error(i, curr.value)); }
 	last_errors = curr_errors;
 	return last_errors.isEmpty();
 }
+// --------------------------------------------------------------------------------------------
