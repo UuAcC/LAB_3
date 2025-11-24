@@ -55,16 +55,19 @@ bool ANALYZER::lexic_check(TQueue<LEXEM> que) {
     last_errors.clear();
     TQueue<error> curr_errors(que.get_size());
 
-    lexem curr; size_t i = 0;
+    lexem curr; size_t i = -1;
     while (!que.isEmpty()) {
-        curr = que.pop();
-        if (curr.type != TYPE::zero && curr.type != TYPE::num) {
-            ++i; continue;
-        }
-        PARCER::to_double(curr.value);
-        if (PARCER::errors_occured())
-            curr_errors.push(error(i, curr.value));
         ++i;
+        curr = que.pop();
+        if (curr.type == TYPE::zero || curr.type == TYPE::num) {
+            PARCER::to_double(curr.value);
+            if (PARCER::errors_occured())
+                curr_errors.push(error(i, curr.value));
+        }
+        /*else if (curr.type == TYPE::not_a_lexem) {
+            curr_errors.push(error(i, curr.value)); continue;
+        }*/
+        else { continue; }
     }
 
     last_errors = curr_errors;

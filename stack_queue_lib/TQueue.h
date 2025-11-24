@@ -49,18 +49,26 @@ public:
     }
 
     TQueue(TQueue&& other) noexcept {
-        size = other.size; other.size = 0;
-        s = other.s; other.s = 0;
-        f = other.f; other.f = 0;
-        arr = other.arr; other.arr = nullptr;
+        size = other.size;
+        s = other.s;
+        f = other.f;
+        arr = other.arr;
+        other.size = 0;
+        other.s = 0;
+        other.f = 0;
+        other.arr = nullptr;
     }
     TQueue& operator=(TQueue&& other) noexcept {
         if (this != &other) {
             delete[] arr;
-            size = other.size; other.size = 0;
-            s = other.s; other.s = 0;
-            f = other.f; other.f = 0;
-            arr = other.arr; other.arr = nullptr;
+            size = other.size; 
+            s = other.s; 
+            f = other.f; 
+            arr = other.arr; 
+            other.size = 0;
+            other.s = 0;
+            other.f = 0;
+            other.arr = nullptr;
         }
         return *this;
     }
@@ -95,7 +103,7 @@ public:
         return ostr;
     }
     friend std::istream& operator>>(std::istream& istr, TQueue& q) {
-        size_t n, i = 0; T val;
+        size_t n; T val;
         istr >> n;
         for (size_t i = 0; i < n; ++i) {
             if (q.ifFull()) break;

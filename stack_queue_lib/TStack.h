@@ -74,6 +74,9 @@ public:
     bool isEmpty() { return curr == -1; }
     bool isFull() { return curr == n - 1; }
 
+    size_t get_size() const { return n; }
+    void clear() { delete[] mem; mem = new T[n]; curr = -1; }
+
     friend std::ostream& operator<<(std::ostream& ostr, TStack& s) {
         ostr << "[ ";
         for (int i = 0; i <= s.curr; i++)

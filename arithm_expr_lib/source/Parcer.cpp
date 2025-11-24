@@ -12,6 +12,7 @@
 #define BOP Type::bop
 #define MUL Type::mul
 #define DIV Type::div
+#define NAL Type::not_a_lexem
 
 using parcer_fp = void(*)(char);
 
@@ -53,8 +54,8 @@ inline void PARCER::pi_f2(char c) {
 inline void PARCER::pi_f3(char c) { pi_s_buffer += c; }
 
 TYPE PARCER::decode(char c) {
-    if (c >= '1' && c <= '9')
-        return NUM;
+    /*if (c >= '1' && c <= '9')
+        return NUM;*/
     switch (c) {
     case '0': return ZERO;
     case '(': return L_BR;
@@ -64,7 +65,7 @@ TYPE PARCER::decode(char c) {
     case '-': return BOP;
     case '*': return MUL;
     case '/': return DIV;
-    default: throw c;
+    default: return NUM; /*throw c;*/
     }
 }
 
@@ -187,7 +188,6 @@ double PARCER::to_double(const string& str) {
             st = td_next[decode(str[i])][st];
         }
         catch (char c) { curr_errors.push(error(i, c)); }
-        /*if (st == STX) { curr_errors.push(error(i, str[i])); }*/
     }
 
     double res = buffer_value / buffer_dot;

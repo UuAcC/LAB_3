@@ -22,7 +22,7 @@ using arithm_fp = double(*)(double, double);
 class ArithmeticExpression {
 public:
     // Enumeration of possible lexeme types in arithmetic expression
-    enum class Type { dot, zero, num, l_br, r_br, bop, mul, div };
+    enum class Type { dot, zero, num, l_br, r_br, bop, mul, div, not_a_lexem };
     // Structure representing a lexeme with its value and type (for example: { "0", ZERO } )
     struct lexem {
         string value; Type type;
@@ -176,7 +176,7 @@ private:
         static inline bool errors_occured() { return !last_errors.isEmpty(); };
         // Prints error message to stderr with last function name and errors
         static void print_error_message();
-        // Checks parentheses balance in the arithmetic expression
+        // Checks parentheses balance in the arithmetic expression (OLD FUNCTION)
         static bool skobochniy_check(const string& str);
         // Performs lexical analysis of arithmetic expression (uses PARCER::to_double)
         static bool lexic_check(TQueue<LEXEM> que);
@@ -207,7 +207,7 @@ public:
         return q_postfix;
     }
     // Function that runs all analyzes, returns true if all checks passed
-    bool run_analyzer();
+    bool run_analyzer(bool print_smth = 0);
     // Calculates the value of the arithmetic expression
     double calculate();
 };
