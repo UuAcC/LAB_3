@@ -54,8 +54,6 @@ inline void PARCER::pi_f2(char c) {
 inline void PARCER::pi_f3(char c) { pi_s_buffer += c; }
 
 TYPE PARCER::decode(char c) {
-    /*if (c >= '1' && c <= '9')
-        return NUM;*/
     switch (c) {
     case '0': return ZERO;
     case '(': return L_BR;
@@ -65,7 +63,7 @@ TYPE PARCER::decode(char c) {
     case '-': return BOP;
     case '*': return MUL;
     case '/': return DIV;
-    default: return NUM; /*throw c;*/
+    default: return NUM;
     }
 }
 
@@ -219,7 +217,7 @@ void PARCER::unary_handle(TQueue<LEXEM>& _infix) noexcept {
 // --------------------------------------------------------------------------------------------
 
 map<string, int> PARCER::priority{
-    {"(", 0}, {"+", 1}, {"-", 1}, {"*", 2},{"/", 2}
+    {"(", 0}, {"+", 1}, {"-", 1}, {"*", 2}, {"/", 2}
 };
 
 TQueue<LEXEM> PARCER::parce_postfix(const TQueue<LEXEM>& in) {
@@ -263,3 +261,57 @@ TQueue<LEXEM> PARCER::parce_postfix(const TQueue<LEXEM>& in) {
     return postf;
 }
 // --------------------------------------------------------------------------------------------
+
+Expr* PARCER::parce_tree(const TQueue<LEXEM>& in) {
+    TQueue<lexem> inf(in); unary_handle(inf);
+
+    size_t sz = inf.get_size();
+
+    TStack<lexem> tempStack(sz);
+    TStack<Expr*> treeStack(sz);
+
+    lexem stackItem;
+    while (!inf.isEmpty()) {
+        lexem item = inf.pop();
+        switch (item.type) {
+        case L_BR:
+            tempStack.push(item);
+            break;
+        case R_BR:
+            stackItem = tempStack.pop();
+            while (stackItem.type != L_BR) {
+                Expr* r = treeStack.pop();
+                Expr* l = treeStack.pop();
+                Expr* newNode = init_bioperation(stackItem.value, l, r);
+                treeStack.push(newNode);
+                stackItem = tempStack.pop();
+            }
+            break;
+        case MUL:
+        case DIV:
+        case BOP:
+            while (!tempStack.isEmpty()) {
+                stackItem = tempStack.top();
+                if (priority[item.value] <= priority[stackItem.value]) {
+                    Expr* r = treeStack.pop();
+                    Expr* l = treeStack.pop();
+                    Expr* newNode = init_bioperation(tempStack.pop().value, l, r);
+                    treeStack.push(newNode);
+                }
+                else { break; }
+            } tempStack.push(item);
+            break;
+        default:
+            treeStack.push(init_fpnumber(item.value));
+        }
+    }
+    while (!tempStack.isEmpty()) {
+        stackItem = tempStack.pop();
+        Expr* r = treeStack.pop();
+        Expr* l = treeStack.pop();
+        Expr* newNode = init_bioperation(stackItem.value, l, r);
+        treeStack.push(newNode);
+    }
+    Expr* res = treeStack.pop();
+    return res;
+}

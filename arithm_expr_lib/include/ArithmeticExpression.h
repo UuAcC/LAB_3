@@ -5,6 +5,7 @@
 
 #include "TStack.h"
 #include "TQueue.h"
+#include "TreeVisitor.h"
 
 #define PARCER ArithmeticExpression::Parcer
 #define ANALYZER ArithmeticExpression::Analyzer
@@ -132,6 +133,8 @@ private:
         static TQueue<LEXEM> parce_infix(const string& str);
         // Converts infix notation to postfix notation using shunting yard algorithm
         static TQueue<LEXEM> parce_postfix(const TQueue<LEXEM>& que);
+
+        static Expr* parce_tree(const TQueue<LEXEM>& inf);
         // Converts string representation of number to double value
         static double to_double(const string& str);
     };
@@ -187,6 +190,7 @@ private:
     string s_infix; // String representation of infix arithmetic expression
     TQueue<lexem> q_infix; // Infix notation represented as lexeme queue
     TQueue<lexem> q_postfix; // Postfix notation represented as lexeme queue
+    Expr* arithm_expr_tree;
 
     // Arithmetic operations used in calculate method via ae_call
 
@@ -206,8 +210,16 @@ public:
             q_postfix = Parcer::parce_postfix(q_infix);
         return q_postfix;
     }
+    inline Expr* get_tree() {
+        if (arithm_expr_tree == nullptr)
+            arithm_expr_tree = Parcer::parce_tree(q_infix);
+        return arithm_expr_tree;
+    }
     // Function that runs all analyzes, returns true if all checks passed
     bool run_analyzer(bool print_smth = 0);
     // Calculates the value of the arithmetic expression
     double calculate();
+
+    double calculate_tree();
+    void print();
 };

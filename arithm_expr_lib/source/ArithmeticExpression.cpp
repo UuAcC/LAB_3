@@ -12,6 +12,7 @@ arithm_fp ArithmeticExpression::ae_call(string str) {
 ArithmeticExpression::ArithmeticExpression(string _infix) {
     s_infix = Parcer::delete_spaces(_infix);
     q_infix = Parcer::parce_infix(s_infix);
+    arithm_expr_tree = nullptr;
 }
 
 bool ArithmeticExpression::run_analyzer(bool print_smth) {
@@ -37,7 +38,7 @@ bool ArithmeticExpression::run_analyzer(bool print_smth) {
 }
 
 double ArithmeticExpression::calculate() {
-    q_postfix = get_q_postfix();
+    /*q_postfix = get_q_postfix();
     TQueue<lexem> temp(q_postfix);
     TStack<double> stack(temp.get_size());
     while (!temp.isEmpty()) {
@@ -49,5 +50,18 @@ double ArithmeticExpression::calculate() {
             double arg1 = stack.pop();
             stack.push(ae_call(curr.value)(arg1, arg2));
         }
-    } return stack.pop();
+    } return stack.pop();*/
+    return calculate_tree();
+}
+
+double ArithmeticExpression::calculate_tree() {
+    Expr* tree = get_tree();
+    CalcVisitor cv;
+    return tree->accept(&cv);
+}
+
+void ArithmeticExpression::print() {
+    Expr* tree = get_tree();
+    PrintVisitor pv;
+    tree->accept(&pv);
 }
