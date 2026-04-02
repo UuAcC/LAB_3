@@ -16,6 +16,16 @@
 #define STATE ArithmeticExpression::state
 #define ERROR ArithmeticExpression::error
 
+#define CHAR_IN_LC c >= 97 && c <= 122
+#define CHAR_IN_UC c >= 65 && c <= 90
+#define CHAR_IN_LETTERS CHAR_IN_LC || CHAR_IN_UC
+
+#define CHAR_IN_INTS tp >= 0 && tp <= 2
+#define CHAR_IN_INTS_ND tp >= 1 && tp <= 2
+#define CHAR_IS_OPERAND tp >= 0 && tp <= 3
+
+#define CHAR_IS_OPERATION tp >= 4 && tp <= 10
+
 using namespace std;
 // Function pointer type for arithmetic operations
 using arithm_fp = double(*)(double, double);
@@ -23,7 +33,13 @@ using arithm_fp = double(*)(double, double);
 class ArithmeticExpression {
 public:
     // Enumeration of possible lexeme types in arithmetic expression
-    enum class Type { dot, zero, num, l_br, r_br, bop, mul, div, not_a_lexem };
+    enum class Type { 
+        dot, zero, num, variable, 
+        l_br, r_br, bop, mul, div, equal, semicolon, 
+        not_a_lexem 
+    };
+    // Function that determines the type of a char
+    static TYPE decode(char c);
     // Structure representing a lexeme with its value and type (for example: { "0", ZERO } )
     struct lexem {
         string value; Type type;
@@ -33,7 +49,7 @@ public:
     friend ostream& operator<<(ostream& ostr, const TYPE& tp);
 private:
     // States for finite state machine, STX - error state for throw
-    enum state { ST0, ST1, ST2, ST3, STX };
+    enum state { ST0, ST1, ST2, ST3, ST4, ST5, STX };
     // Structure representing an error with its position and value
     struct error {
         size_t index; string value;
@@ -50,21 +66,19 @@ private:
 
         // Operator priority mapping
         static map<string, int> priority;
-        // Function that determines the type of a character
-        static TYPE decode(char c);
         // Function that determines if a string represents a number type
         static TYPE type_num(string str);
 
         // --------------------------------------------------------------------------------------------
         //                Finite state machine for parce_infix function:
         // 
-        //    |------|---------------|--------|      |------|---------------|--------|
-        //    | next | [+,-,*,/,(,)] | [0..9] |      | call | [+,-,*,/,(,)] | [0..9] |
-        //    |------|---------------|--------|      |------|---------------|--------|
-        //    | ST0  |      ST0      |   ST1  |      | ST0  |      f0       |   f1   |
-        //    |------|---------------|--------|      |------|---------------|--------|
-        //    | ST1  |      ST0      |   ST1  |      | ST1  |      f2       |   f3   |
-        //    |------|---------------|--------|      |------|---------------|--------|
+        //    |------|-------------------|-------------|      |------|-------------------|-------------|
+        //    | next | [+,-,*,/,(,),;,=] | ints & vars |      | call | [+,-,*,/,(,),;,=] | ints & vars |
+        //    |------|-------------------|-------------|      |------|-------------------|-------------|
+        //    | ST0  |        ST0        |     ST1     |      | ST0  |        f0         |     f1      |
+        //    |------|-------------------|-------------|      |------|-------------------|-------------|
+        //    | ST1  |        ST0        |     ST1     |      | ST1  |        f2         |     f3      |
+        //    |------|-------------------|-------------|      |------|-------------------|-------------|
 
         // Buffer for accumulating digits during parce_infix execution
         static string pi_s_buffer;
@@ -134,7 +148,7 @@ private:
         // Converts infix notation to postfix notation using shunting yard algorithm
         static TQueue<LEXEM> parce_postfix(const TQueue<LEXEM>& que);
 
-        static Expr* parce_tree(const TQueue<LEXEM>& inf);
+        static Expr* parce_tree(const TQueue<LEXEM>& que);
         // Converts string representation of number to double value
         static double to_double(const string& str);
     };
@@ -147,18 +161,23 @@ private:
 
         // --------------------------------------------------------------------------------------------
         //                           Finite state machine for syntax_check function:
-        // 
-        //    |------|--------|---|---|--------|---|---|---|    |------|--------|---|---|--------|---|---|---|
-        //    | next | [+, -] | * | / | [1..9] | 0 | ( | ) |    | call | [+, -] | * | / | [1..9] | 0 | ( | ) |   
-        //    |------|--------|---|---|--------|---|---|---|    |------|--------|---|---|--------|---|---|---|
-        //    | ST0  |   ST2  |STx|STx|  ST1   |ST1|ST0|STx|    | ST0  |   f0   |f1 |f1 |  f0    |f0 |f0 |f1 |
-        //    |------|--------|---|---|--------|---|---|---|    |------|--------|---|---|--------|---|---|---|
-        //    | ST1  |   ST2  |ST2|ST3|  STx   |STx|STx|ST1|    | ST1  |   f0   |f0 |f0 |  f1    |f1 |f1 |f0 |
-        //    |------|--------|---|---|--------|---|---|---|    |------|--------|---|---|--------|---|---|---|
-        //    | ST2  |   STx  |STx|STx|  ST1   |ST1|ST0|STx|    | ST2  |   f1   |f1 |f1 |  f0    |f0 |f0 |f1 |
-        //    |------|--------|---|---|--------|---|---|---|    |------|--------|---|---|--------|---|---|---|
-        //    | ST3  |   STx  |STx|STx|  ST1   |STx|ST0|STx|    | ST3  |   f1   |f1 |f1 |  f0    |f1 |f0 |f1 |
-        //    |------|--------|---|---|--------|---|---|---|    |------|--------|---|---|--------|---|---|---|
+        // FUUUUUUUCK nill kiggers nuck figgers and nate higgers
+        //    |------|---|-----|-----|---|---|-------|---|---|---|---|     |------|---|-----|-----|---|---|-------|---|---|---|---|
+        //    | next | 0 | int | var | ( | ) | [+,-] | * | / | = | ; |     | call | 0 | int | var | ( | ) | [+,-] | * | / | = | ; |
+        //    |------|---|-----|-----|---|---|-------|---|---|---|---|     |------|---|-----|-----|---|---|-------|---|---|---|---|
+        //    | ST0  |ST3| ST3 | ST1 |ST2|STx|  ST4  |STx|STx|STx|STx|     | ST0  | f0|  f0 |  f0 | f0| f1|   f0  | f1| f1| f1| f1|
+        //    |------|---|-----|-----|---|---|-------|---|---|---|---|     |------|---|-----|-----|---|---|-------|---|---|---|---|
+        //    | ST1  |STx| STx | STx |STx|STx|  ST4  |ST4|ST5|ST2|STx|     | ST1  | f1|  f1 |  f1 | f1| f1|   f0  | f0| f0| f0| f1| 
+        //    |------|---|-----|-----|---|---|-------|---|---|---|---|     |------|---|-----|-----|---|---|-------|---|---|---|---|
+        //    | ST2  |ST3| ST3 | ST3 |ST2|STx|  ST4  |STx|STx|STx|STx|     | ST2  | f0|  f0 |  f0 | f0| f1|   f0  | f1| f1| f1| f1|
+        //    |------|---|-----|-----|---|---|-------|---|---|---|---|     |------|---|-----|-----|---|---|-------|---|---|---|---|
+        //    | ST3  |STx| STx | STx |STx|ST3|  ST4  |ST4|ST5|STx|ST0|     | ST3  | f1|  f1 |  f1 | f1| f0|   f0  | f0| f0| f1| f0|
+        //    |------|---|-----|-----|---|---|-------|---|---|---|---|     |------|---|-----|-----|---|---|-------|---|---|---|---|
+        //    | ST4  |ST3| ST3 | ST3 |ST2|STx|  STx  |STx|STx|STx|STx|     | ST4  | f0|  f0 |  f0 | f0| f1|   f1  | f1| f1| f1| f1|
+        //    |------|---|-----|-----|---|---|-------|---|---|---|---|     |------|---|-----|-----|---|---|-------|---|---|---|---|
+        //    | ST5  |STx| ST3 | ST3 |ST2|STx|  STx  |STx|STx|STx|STx|     | ST5  | f1|  f0 |  f0 | f0| f1|   f1  | f1| f1| f1| f1|
+        //    |------|---|-----|-----|---|---|-------|---|---|---|---|     |------|---|-----|-----|---|---|-------|---|---|---|---|
+
 
         // Returns function pointer from sc_funcs based on current state and lexeme type
         static void (*sc_call(STATE st, TYPE tp))(LEXEM);
@@ -212,7 +231,7 @@ public:
     }
     inline Expr* get_tree() {
         if (arithm_expr_tree == nullptr)
-            arithm_expr_tree = Parcer::parce_tree(q_infix);
+            arithm_expr_tree = Parcer::parce_tree(get_q_postfix());
         return arithm_expr_tree;
     }
     // Function that runs all analyzes, returns true if all checks passed

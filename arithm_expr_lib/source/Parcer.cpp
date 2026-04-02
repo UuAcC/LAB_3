@@ -1,17 +1,20 @@
 #include "ArithmeticExpression.h"
 
-#define CHAR_IN_OPS tp >= 3 && tp <= 7
-#define CHAR_IN_INTS tp >= 0 && tp <= 2
-#define CHAR_IN_INTS_ND tp >= 1 && tp <= 2
-
 #define ZERO Type::zero
 #define NUM Type::num
 #define DOT Type::dot
+
+#define VAR Type::variable
+
 #define L_BR Type::l_br
 #define R_BR Type::r_br
+#define SMCLN Type::semicolon
+
 #define BOP Type::bop
 #define MUL Type::mul
 #define DIV Type::div
+#define EQ Type::equal
+
 #define NAL Type::not_a_lexem
 
 using parcer_fp = void(*)(char);
@@ -53,42 +56,30 @@ inline void PARCER::pi_f2(char c) {
 }
 inline void PARCER::pi_f3(char c) { pi_s_buffer += c; }
 
-TYPE PARCER::decode(char c) {
-    switch (c) {
-    case '0': return ZERO;
-    case '(': return L_BR;
-    case ')': return R_BR;
-    case '.': return DOT;
-    case '+':
-    case '-': return BOP;
-    case '*': return MUL;
-    case '/': return DIV;
-    default: return NUM;
-    }
-}
-
 TYPE PARCER::type_num(string str) {
     if (str == "0") return ZERO;
-    return NUM;
+    for (char c : str) {
+        if (CHAR_IN_LETTERS) return VAR;
+    } return NUM;
 }
 
 STATE PARCER::pi_next(char c) {
     int tp = (int)decode(c);
-    if (CHAR_IN_OPS) { return ST0; }
-    if (CHAR_IN_INTS) { return ST1; }
+    if (CHAR_IS_OPERATION) { return ST0; }
+    if (CHAR_IS_OPERAND) { return ST1; }
     else throw c;
 }
 
 parcer_fp PARCER::pi_call(state st, char c) {
     int tp = (int)decode(c);
     if (st == ST0) {
-        if (CHAR_IN_OPS) { return pi_f0; }
-        if (CHAR_IN_INTS) { return pi_f1; }
+        if (CHAR_IS_OPERATION) { return pi_f0; }
+        if (CHAR_IS_OPERAND) { return pi_f1; }
         else throw c;
     }
     else if (st == ST1) {
-        if (CHAR_IN_OPS) { return pi_f2; }
-        if (CHAR_IN_INTS) { return pi_f3; }
+        if (CHAR_IS_OPERATION) { return pi_f2; }
+        if (CHAR_IS_OPERAND) { return pi_f3; }
         else throw c;
     }
 }
@@ -217,7 +208,7 @@ void PARCER::unary_handle(TQueue<LEXEM>& _infix) noexcept {
 // --------------------------------------------------------------------------------------------
 
 map<string, int> PARCER::priority{
-    {"(", 0}, {"+", 1}, {"-", 1}, {"*", 2}, {"/", 2}
+    {";", 0}, {"=", 1}, {"(", 2}, {"+", 3}, {"-", 3}, {"*", 4}, {"/", 4}
 };
 
 TQueue<LEXEM> PARCER::parce_postfix(const TQueue<LEXEM>& in) {
@@ -240,18 +231,17 @@ TQueue<LEXEM> PARCER::parce_postfix(const TQueue<LEXEM>& in) {
                 stackItem = st.pop();
             }
             break;
-        case MUL:
-        case DIV:
-        case BOP:
+        case VAR:
+        case ZERO:
+        case NUM:
+            postf.push(item); break;
+        default:
             while (!st.isEmpty()) {
                 stackItem = st.top();
                 if (priority[item.value] <= priority[stackItem.value])
                     postf.push(st.pop());
                 else { break; }
             } st.push(item);
-            break;
-        default:
-            postf.push(item);
         }
     }
     while (!st.isEmpty()) {
@@ -262,56 +252,77 @@ TQueue<LEXEM> PARCER::parce_postfix(const TQueue<LEXEM>& in) {
 }
 // --------------------------------------------------------------------------------------------
 
-Expr* PARCER::parce_tree(const TQueue<LEXEM>& in) {
-    TQueue<lexem> inf(in); unary_handle(inf);
+//Expr* PARCER::parce_tree(const TQueue<LEXEM>& in) {
+//    TQueue<lexem> inf(in); unary_handle(inf);
+//
+//    size_t sz = inf.get_size();
+//
+//    TStack<lexem> tempStack(sz);
+//    TStack<Expr*> treeStack(sz);
+//
+//    lexem stackItem;
+//    while (!inf.isEmpty()) {
+//        lexem item = inf.pop();
+//        switch (item.type) {
+//        case L_BR:
+//            tempStack.push(item);
+//            break;
+//        case R_BR:
+//            stackItem = tempStack.pop();
+//            while (stackItem.type != L_BR) {
+//                Expr* r = treeStack.pop();
+//                Expr* l = treeStack.pop();
+//                Expr* newNode = init_bioperation(stackItem.value, l, r);
+//                treeStack.push(newNode);
+//                stackItem = tempStack.pop();
+//            }
+//            break;
+//        case MUL:
+//        case DIV:
+//        case BOP:
+//            while (!tempStack.isEmpty()) {
+//                stackItem = tempStack.top();
+//                if (priority[item.value] <= priority[stackItem.value]) {
+//                    Expr* r = treeStack.pop();
+//                    Expr* l = treeStack.pop();
+//                    Expr* newNode = init_bioperation(tempStack.pop().value, l, r);
+//                    treeStack.push(newNode);
+//                }
+//                else { break; }
+//            } tempStack.push(item);
+//            break;
+//        default:
+//            treeStack.push(init_fpnumber(item.value));
+//        }
+//    }
+//    while (!tempStack.isEmpty()) {
+//        stackItem = tempStack.pop();
+//        Expr* r = treeStack.pop();
+//        Expr* l = treeStack.pop();
+//        Expr* newNode = init_bioperation(stackItem.value, l, r);
+//        treeStack.push(newNode);
+//    }
+//    Expr* res = treeStack.pop();
+//    return res;
+//}
 
-    size_t sz = inf.get_size();
-
-    TStack<lexem> tempStack(sz);
+Expr* PARCER::parce_tree(const TQueue<LEXEM>& que) {
+    TQueue<lexem> postf(que);
+    size_t sz = postf.get_size();
+    
     TStack<Expr*> treeStack(sz);
-
-    lexem stackItem;
-    while (!inf.isEmpty()) {
-        lexem item = inf.pop();
-        switch (item.type) {
-        case L_BR:
-            tempStack.push(item);
-            break;
-        case R_BR:
-            stackItem = tempStack.pop();
-            while (stackItem.type != L_BR) {
-                Expr* r = treeStack.pop();
-                Expr* l = treeStack.pop();
-                Expr* newNode = init_bioperation(stackItem.value, l, r);
-                treeStack.push(newNode);
-                stackItem = tempStack.pop();
-            }
-            break;
-        case MUL:
-        case DIV:
-        case BOP:
-            while (!tempStack.isEmpty()) {
-                stackItem = tempStack.top();
-                if (priority[item.value] <= priority[stackItem.value]) {
-                    Expr* r = treeStack.pop();
-                    Expr* l = treeStack.pop();
-                    Expr* newNode = init_bioperation(tempStack.pop().value, l, r);
-                    treeStack.push(newNode);
-                }
-                else { break; }
-            } tempStack.push(item);
-            break;
-        default:
+    while (!postf.isEmpty()) {
+        lexem item = postf.pop();
+        if (item.type == VAR || item.type == NUM || item.type == ZERO) {
             treeStack.push(init_fpnumber(item.value));
         }
+        else {
+            Expr* r = treeStack.pop();
+            Expr* l = treeStack.pop();
+            Expr* newNode = init_bioperation(item.value, l, r);
+            treeStack.push(newNode);
+        }
     }
-    while (!tempStack.isEmpty()) {
-        stackItem = tempStack.pop();
-        Expr* r = treeStack.pop();
-        Expr* l = treeStack.pop();
-        Expr* newNode = init_bioperation(stackItem.value, l, r);
-        treeStack.push(newNode);
-    }
-    Expr* res = treeStack.pop();
-    return res;
+    return treeStack.pop();
 }
+

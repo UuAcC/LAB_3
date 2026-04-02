@@ -2,57 +2,78 @@
 #include <iostream>
 #include <string>
 
+using namespace std;
+
+struct ExprRetVal {
+	string var_name;
+	double doub_val;
+	ExprRetVal(double _dv);
+	ExprRetVal(string _vn);
+};
+
 class FPNumber;
 class BiOperation;
-
-//double to_double(std::string str);
-// я не придумал, как их прилинковать друг к другу, использовал встроенное
+class Variable;
 
 class Visitor {
 public:
-	virtual double visitFPNumber(FPNumber* num) = 0;
-	virtual double visitBiOperation(BiOperation* op) = 0;
+	virtual ExprRetVal visitFPNumber(FPNumber* num) = 0;
+	virtual ExprRetVal visitBiOperation(BiOperation* op) = 0;
+	virtual ExprRetVal visitVariable(Variable* var) = 0;
 };
 
 class Expr {
 public:
-	virtual double accept(Visitor* v) = 0;
+	virtual ExprRetVal accept(Visitor* v) = 0;
 };
 
 class FPNumber : public Expr {
-	std::string val;
+	string val;
 public:
-	FPNumber(std::string _val) : val(_val) {}
+	FPNumber(string _val) : val(_val) {}
 	double getVal() const;
-	virtual double accept(Visitor* v) override;
+	virtual ExprRetVal accept(Visitor* v) override;
 };
 
 class BiOperation : public Expr {
-	std::string op;
+	string op;
 	Expr* left;
 	Expr* right;
 public:
-	BiOperation(std::string _op, Expr* l, Expr* r) :
+	BiOperation(string _op, Expr* l, Expr* r) :
 		op(_op), left(l), right(r) {}
-	virtual double accept(Visitor* v) override;
+	virtual ExprRetVal accept(Visitor* v) override;
 
 	Expr* getLeft();
 	Expr* getRight();
 
-	std::string getOp() const;
+	string getOp() const;
+};
+
+class Variable : public Expr {
+	string name;
+public:
+	Variable(string _n) : name(_n) {}
+	virtual ExprRetVal accept(Visitor* v) override;
+	string getName() const;
 };
 
 class CalcVisitor : public Visitor {
+	//AVLTree<ExprRetVal> var_table;
+	map<string, double> var_table;
 public:
-	virtual double visitFPNumber(FPNumber* num) override;
-	virtual double visitBiOperation(BiOperation* op) override;
+	virtual ExprRetVal visitFPNumber(FPNumber* num) override;
+	virtual ExprRetVal visitBiOperation(BiOperation* op) override;
+	virtual ExprRetVal visitVariable(Variable* var) override;
 };
 
 class PrintVisitor : public Visitor {
 public:
-	virtual double visitFPNumber(FPNumber* num) override;
-	virtual double visitBiOperation(BiOperation* op) override;
+	virtual ExprRetVal visitFPNumber(FPNumber* num) override;
+	virtual ExprRetVal visitBiOperation(BiOperation* op) override;
+	virtual ExprRetVal visitVariable(Variable* var) override;
 };
 
-Expr* init_fpnumber(std::string v);
-Expr* init_bioperation(std::string c, Expr* l, Expr* r);
+Expr* init_fpnumber(string v);
+Expr* init_bioperation(string c, Expr* l, Expr* r);
+Expr* init_variable(string n);
