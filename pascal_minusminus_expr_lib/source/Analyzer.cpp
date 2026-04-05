@@ -1,4 +1,4 @@
-#include "ArithmeticExpression.h"
+#include "Pascal_MinusMinus_Expression.h"
 
 string ANALYZER::last_func;
 TQueue<ERROR> ANALYZER::last_errors;
@@ -59,12 +59,12 @@ bool ANALYZER::lexic_check(TQueue<LEXEM> que) {
 	while (!que.isEmpty()) {
 		++i;
 		curr = que.pop();
-		if (curr.type == TYPE::zero || curr.type == TYPE::num) {
+		if (curr.type == LEX_TYPE::zero || curr.type == LEX_TYPE::num) {
 			PARCER::to_double(curr.value);
 			if (PARCER::errors_occured())
 				curr_errors.push(error(i, curr.value));
 		}
-		else if (curr.type == TYPE::variable) {
+		else if (curr.type == LEX_TYPE::variable) {
 			int tp = (int)decode(curr.value[0]);
 			if (CHAR_IN_INTS)
 				curr_errors.push(error(i, curr.value));
@@ -87,7 +87,7 @@ bool ANALYZER::lexic_check(TQueue<LEXEM> que) {
 inline void ANALYZER::sc_f0(LEXEM lex) { /* Do nothing */ }
 inline void ANALYZER::sc_f1(LEXEM lex) { throw lex; }
 
-syntaxer_fp ANALYZER::sc_call(STATE st, TYPE tp) {
+syntaxer_fp ANALYZER::sc_call(STATE st, LEX_TYPE tp) {
 	return sc_funcs[(int)st * 10 + (int)tp - 1];
 }
 
@@ -100,7 +100,7 @@ syntaxer_fp ANALYZER::sc_funcs[60]{
 	sc_f1, sc_f0, sc_f0, sc_f0, sc_f1, sc_f1, sc_f1, sc_f1, sc_f1, sc_f1
 };
 
-STATE ANALYZER::sc_next(STATE st, TYPE tp) {
+STATE ANALYZER::sc_next(STATE st, LEX_TYPE tp) {
 	return sc_states[(int)st * 10 + (int)tp - 1];
 }
 

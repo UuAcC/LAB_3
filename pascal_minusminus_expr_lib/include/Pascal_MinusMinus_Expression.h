@@ -7,14 +7,16 @@
 #include "TQueue.h"
 #include "TreeVisitor.h"
 
-#define PARCER ArithmeticExpression::Parcer
-#define ANALYZER ArithmeticExpression::Analyzer
+#define PMM_EXPR Pascal_MinusMinus_Expression
 
-#define TYPE ArithmeticExpression::Type
-#define LEXEM ArithmeticExpression::lexem
+#define PARCER PMM_EXPR::Parcer
+#define ANALYZER PMM_EXPR::Analyzer
 
-#define STATE ArithmeticExpression::state
-#define ERROR ArithmeticExpression::error
+#define LEX_TYPE PMM_EXPR::LexemType
+#define LEXEM PMM_EXPR::lexem
+
+#define STATE PMM_EXPR::state
+#define ERROR PMM_EXPR::error
 
 #define CHAR_IN_LC c >= 97 && c <= 122
 #define CHAR_IN_UC c >= 65 && c <= 90
@@ -27,26 +29,26 @@
 #define CHAR_IS_OPERATION tp >= 4 && tp <= 10
 
 using namespace std;
-// Function pointer type for arithmetic operations
-using arithm_fp = double(*)(double, double);
+// Function pointer type for operations
+using pmme_fp = double(*)(double, double);
 
-class ArithmeticExpression {
+class Pascal_MinusMinus_Expression {
 public:
     // Enumeration of possible lexeme types in arithmetic expression
-    enum class Type { 
+    enum class LexemType { 
         dot, zero, num, variable, 
         l_br, r_br, bop, mul, div, equal, semicolon, 
         not_a_lexem 
     };
     // Function that determines the type of a char
-    static TYPE decode(char c);
+    static LexemType decode(char c);
     // Structure representing a lexeme with its value and type (for example: { "0", ZERO } )
     struct lexem {
-        string value; Type type;
-        lexem(string s = "0", Type t = Type::zero);
+        string value; LexemType type;
+        lexem(string s = "0", LexemType t = LexemType::zero);
     };
     friend ostream& operator<<(ostream& ostr, const LEXEM& lex);
-    friend ostream& operator<<(ostream& ostr, const TYPE& tp);
+    friend ostream& operator<<(ostream& ostr, const LEX_TYPE& tp);
 private:
     // States for finite state machine, STX - error state for throw
     enum state { ST0, ST1, ST2, ST3, ST4, ST5, STX };
@@ -67,7 +69,7 @@ private:
         // Operator priority mapping
         static map<string, int> priority;
         // Function that determines if a string represents a number type
-        static TYPE type_num(string str);
+        static LEX_TYPE type_num(string str);
 
         // --------------------------------------------------------------------------------------------
         //                Finite state machine for parce_infix function:
@@ -120,7 +122,7 @@ private:
         static double buffer_dot;
 
         // State transition table for to_double finite state machine
-        static map<TYPE, map<state, state>> td_next;
+        static map<LEX_TYPE, map<state, state>> td_next;
 
         // Returns the function to call based on current state and input character for to_double
         static void (*td_call(state st, char c))(char);
@@ -180,12 +182,12 @@ private:
 
 
         // Returns function pointer from sc_funcs based on current state and lexeme type
-        static void (*sc_call(STATE st, TYPE tp))(LEXEM);
+        static void (*sc_call(STATE st, LEX_TYPE tp))(LEXEM);
         // Array containing function pointers for syntax_check finite state machine
         static void (*sc_funcs[])(LEXEM);
 
         // Returns next state from sc_states based on current state and lexeme type
-        static STATE sc_next(STATE st, TYPE tp);
+        static STATE sc_next(STATE st, LEX_TYPE tp);
         // Array containing state transitions for syntax_check finite state machine
         static STATE sc_states[];
 
@@ -209,19 +211,9 @@ private:
     string s_infix; // String representation of infix arithmetic expression
     TQueue<lexem> q_infix; // Infix notation represented as lexeme queue
     TQueue<lexem> q_postfix; // Postfix notation represented as lexeme queue
-    Expr* arithm_expr_tree;
-
-    // Arithmetic operations used in calculate method via ae_call
-
-    static inline double add(double arg1, double arg2) { return arg1 + arg2; }
-    static inline double sub(double arg1, double arg2) { return arg1 - arg2; }
-    static inline double mul(double arg1, double arg2) { return arg1 * arg2; }
-    static inline double div(double arg1, double arg2) { return arg1 / arg2; }
-
-    // Returns function pointer for arithmetic operation based on operator string
-    arithm_fp ae_call(string str);
+    Expr* expression_tree;
 public:
-    ArithmeticExpression(string _infix);
+    Pascal_MinusMinus_Expression(string _infix);
     inline string get_s_infix() const { return s_infix; }
     inline TQueue<lexem> get_q_infix() const { return q_infix; }
     inline const TQueue<lexem>& get_q_postfix() {
@@ -230,15 +222,14 @@ public:
         return q_postfix;
     }
     inline Expr* get_tree() {
-        if (arithm_expr_tree == nullptr)
-            arithm_expr_tree = Parcer::parce_tree(get_q_postfix());
-        return arithm_expr_tree;
+        if (expression_tree == nullptr)
+            expression_tree = Parcer::parce_tree(get_q_postfix());
+        return expression_tree;
     }
     // Function that runs all analyzes, returns true if all checks passed
     bool run_analyzer(bool print_smth = 0);
-    // Calculates the value of the arithmetic expression
-    double calculate();
+    // Executes the code
+    void execute();
 
-    double calculate_tree();
     void print();
 };

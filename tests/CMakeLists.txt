@@ -7,6 +7,6 @@ add_executable(${target} ${srcs} ${hdrs})
 
 target_compile_options(${target} PRIVATE "$<$<CXX_COMPILER_ID:MSVC>:/MDd>")
 
-target_link_libraries(${target} gtest gtest_main ${STACK_QUEUE_LIBRARY} ${ARITHM_EXPR_LIBRARY})
+target_link_libraries(${target} gtest gtest_main ${DATA_STRUCTURES_LIBRARY} ${PMME_LIBRARY})
 
 gtest_discover_tests(${target})

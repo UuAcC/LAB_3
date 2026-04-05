@@ -1,21 +1,21 @@
-#include "ArithmeticExpression.h"
+#include "Pascal_MinusMinus_Expression.h"
 
-#define ZERO Type::zero
-#define NUM Type::num
-#define DOT Type::dot
+#define ZERO LexemType::zero
+#define NUM LexemType::num
+#define DOT LexemType::dot
 
-#define VAR Type::variable
+#define VAR LexemType::variable
 
-#define L_BR Type::l_br
-#define R_BR Type::r_br
-#define SMCLN Type::semicolon
+#define L_BR LexemType::l_br
+#define R_BR LexemType::r_br
+#define SMCLN LexemType::semicolon
 
-#define BOP Type::bop
-#define MUL Type::mul
-#define DIV Type::div
-#define EQ Type::equal
+#define BOP LexemType::bop
+#define MUL LexemType::mul
+#define DIV LexemType::div
+#define EQ LexemType::equal
 
-#define NAL Type::not_a_lexem
+#define NAL LexemType::not_a_lexem
 
 using parcer_fp = void(*)(char);
 
@@ -56,7 +56,7 @@ inline void PARCER::pi_f2(char c) {
 }
 inline void PARCER::pi_f3(char c) { pi_s_buffer += c; }
 
-TYPE PARCER::type_num(string str) {
+LEX_TYPE PARCER::type_num(string str) {
     if (str == "0") return ZERO;
     for (char c : str) {
         if (CHAR_IN_LETTERS) return VAR;
@@ -115,7 +115,7 @@ TQueue<LEXEM> PARCER::parce_infix(const string& str) {
 double PARCER::buffer_value = 0.0;
 double PARCER::buffer_dot = 1.0;
 // std::function<void(state, char)> 
-map<TYPE, map<STATE, STATE>> PARCER::td_next{
+map<LEX_TYPE, map<STATE, STATE>> PARCER::td_next{
     //          ST0         ST1         ST2         ST3
     {ZERO, { {ST0, ST2}, {ST1, ST1}, {ST2, STX}, {ST3, ST3} } },
     {NUM, { {ST0, ST1}, {ST1, ST1}, {ST2, STX}, {ST3, ST3} } },
@@ -190,7 +190,7 @@ double PARCER::to_double(const string& str) {
 void PARCER::unary_handle(TQueue<LEXEM>& _infix) noexcept {
     vector<lexem> buffer(_infix.to_vector());
     auto iterator = buffer.begin();
-    Type pvi = buffer[0].type;
+    LEX_TYPE pvi = buffer[0].type;
     if (pvi == BOP) {
         buffer.insert(iterator, lexem("0", ZERO));
     }
@@ -325,4 +325,3 @@ Expr* PARCER::parce_tree(const TQueue<LEXEM>& que) {
     }
     return treeStack.pop();
 }
-

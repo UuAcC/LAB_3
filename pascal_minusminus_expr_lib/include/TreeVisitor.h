@@ -1,14 +1,22 @@
 #pragma once
 #include <iostream>
 #include <string>
+#include <map>
 
 using namespace std;
 
 struct ExprRetVal {
 	string var_name;
 	double doub_val;
-	ExprRetVal(double _dv);
-	ExprRetVal(string _vn);
+	bool bool_value;
+
+	ExprRetVal(string _vn) : var_name(_vn) {}
+	ExprRetVal(double _dv) : doub_val(_dv) {}
+	ExprRetVal(bool _bv) : bool_value(_bv) {}
+
+	inline explicit operator string() const { return var_name; }
+	inline explicit operator double() const { return doub_val; }
+	inline explicit operator bool() const { return bool_value; }
 };
 
 class FPNumber;
@@ -61,7 +69,7 @@ public:
 class CalcVisitor : public Visitor {
 	//AVLTree<ExprRetVal> var_table;
 	map<string, double> var_table;
-public:
+public: 
 	virtual ExprRetVal visitFPNumber(FPNumber* num) override;
 	virtual ExprRetVal visitBiOperation(BiOperation* op) override;
 	virtual ExprRetVal visitVariable(Variable* var) override;

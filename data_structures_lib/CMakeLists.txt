@@ -1,6 +1,6 @@
-set(target ${STACK_QUEUE_LIBRARY})
+set(target ${DATA_STRUCTURES_LIBRARY})
 
-add_library(${target} STATIC TStack.h TQueue.h library.cpp)
+add_library(${target} STATIC TTree.h TStack.h TQueue.h library.cpp)
 
 if(MSVC)
     target_compile_options(${target} PRIVATE "$<$<CONFIG:Debug>:/MDd>" "$<$<CONFIG:Release>:/MD>")

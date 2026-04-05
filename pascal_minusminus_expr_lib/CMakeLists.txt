@@ -1,6 +1,6 @@
-set(target ${ARITHM_EXPR_LIBRARY})
+set(target ${PMME_LIBRARY})
 
-file(GLOB hdrs "include/*.h*" "${ARITHM_EXPR_INCLUDE}/*.h*")
+file(GLOB hdrs "include/*.h*" "${PMME_INCLUDE}/*.h*")
 file(GLOB srcs "source/*.cpp*")
 
 add_library(${target} STATIC ${srcs} ${hdrs})
@@ -10,4 +10,4 @@ if(MSVC)
 endif()
 
 target_link_libraries(${target} ${LIBRARY_DEPS})
-target_link_libraries(${target} ${STACK_QUEUE_LIBRARY})
+target_link_libraries(${target} ${DATA_STRUCTURES_LIBRARY})
