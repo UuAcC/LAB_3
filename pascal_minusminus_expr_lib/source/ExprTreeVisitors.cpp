@@ -1,4 +1,5 @@
-#include "TreeVisitor.h"
+#include "ExprTreeVisitors.h"
+#include <iostream>
 
 double FPNumber::getVal() const { return std::stod(val); }
 
@@ -25,12 +26,14 @@ ExprRetVal CalcVisitor::visitFPNumber(FPNumber* num) {
 	return ExprRetVal(num->getVal());
 }
 ExprRetVal CalcVisitor::visitBiOperation(BiOperation* op) {
+	if (!table_inited) { var_table = ExprVarTable(); table_inited = true; }
+
 	ExprRetVal left = op->getLeft()->accept(this);
 	ExprRetVal right = op->getRight()->accept(this);
 
 	char oper = op->getOp()[0];
 	if (oper == '=') {
-		var_table[(string)left] = (double)right;
+		var_table.insert(ExprVarData((string)left, (double)right));
 		return (string)left;
 	}
 	else { // из-за этого придется изменить парсер )
@@ -49,7 +52,11 @@ ExprRetVal CalcVisitor::visitBiOperation(BiOperation* op) {
 	}
 }
 ExprRetVal CalcVisitor::visitVariable(Variable* var) {
-	return ExprRetVal(var->getName());
+	string name = var->getName();
+	ExprRetVal res = ExprRetVal(name);
+	if (var_table.contains(name)) 
+		res.doub_val = var_table[name];
+	return res;
 }
 
 

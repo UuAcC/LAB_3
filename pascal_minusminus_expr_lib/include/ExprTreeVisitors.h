@@ -1,9 +1,5 @@
 #pragma once
-#include <iostream>
-#include <string>
-#include <map>
-
-using namespace std;
+#include "ExprVarTable.h"
 
 struct ExprRetVal {
 	string var_name;
@@ -67,8 +63,8 @@ public:
 };
 
 class CalcVisitor : public Visitor {
-	//AVLTree<ExprRetVal> var_table;
-	map<string, double> var_table;
+	ExprVarTable var_table;
+	bool table_inited;
 public: 
 	virtual ExprRetVal visitFPNumber(FPNumber* num) override;
 	virtual ExprRetVal visitBiOperation(BiOperation* op) override;
