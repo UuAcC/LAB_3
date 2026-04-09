@@ -49,10 +49,6 @@ TEST_F(TTreeTest, MinOnEmptyThrows) {
     EXPECT_THROW(tree.min(), TreeExceptions);
 }
 
-TEST_F(TTreeTest, ContainsOnEmptyThrows) {
-    EXPECT_THROW(tree.contains(5), TreeExceptions);
-}
-
 TEST_F(TTreeTest, RemoveLeaf) {
     FillTree({ 10, 5, 15 });
     tree.outsert(5);

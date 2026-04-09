@@ -1,18 +1,5 @@
-#include "Pascal_MinusMinus_Expression.h"
 #include <gtest/gtest.h>
-
-// Специализация не создавалась, т.к. шаблон в глобальном пространстве имен, 
-// а специализация в Pascal_MinusMinus_Expression.
-// Она выглядела так:
-// 
-// template<>
-// ostream& operator<<(std::ostream& ostr, TQueue<LEXEM>& q) { тут какой-то код }
-
-// Далее пытался сделать перегрузку, но уперся в ошибку:
-// error C2084: функция "std::ostream &TQueue<Pascal_MinusMinus_Expression::lexem>::operator <<(std::ostream &,TQueue<Pascal_MinusMinus_Expression::lexem> &)" уже имеет текст реализации
-
-// В итоге оказалось, что я час крутил функцию, которая мне в дальнейшем будет не нужна.
-// Вряд ли я это даже покажу.
+#include "Pascal_MinusMinus_Expression.h"
 
 void print_lexem_queue(ostream& ostr, TQueue<LEXEM>& q) {
 	TQueue<LEXEM> tmp(q);
@@ -29,25 +16,37 @@ void print_lexem_queue(ostream& ostr, TQueue<LEXEM>& q) {
 	ostr << "types: " << tps;
 }
 
-// ((325 - 45.231) * 78 - 23434 / 1.00)
+void run_PMME_array(string arr[], int sz) {
+	cout << endl;
+	for (int i = 0; i < sz; ++i) {
+		cout << arr[i] << endl;
+		PMM_EXPR _(arr[i]);
+		bool run_res = _.run_analyzer(1);
+		if (run_res) {
+			//cout << endl;
 
-TEST(Pascal_MinusMinus_Expression, Previous_main) {
-	string str;
-	/*getline(cin, str);*/
-	str = "-)-3242  (+ 3*(43  - 2723).4353)";
+			TQueue<LEXEM> inf = _.get_q_infix();
 
-	Pascal_MinusMinus_Expression _(str);
-	bool run_res = _.run_analyzer(1);
-	if (run_res) {
-		cout << endl;
-		TQueue<LEXEM> inf = _.get_q_infix();
-		print_lexem_queue(cout, inf);
-		cout << endl << endl;
-		TQueue<LEXEM> postf = _.get_q_postfix();
-		print_lexem_queue(cout, postf);
-		cout << endl << endl;
-		_.execute();
+			//print_lexem_queue(cout, inf);
+			//cout << endl << endl;
+
+			TQueue<LEXEM> postf = _.get_q_postfix();
+
+			//print_lexem_queue(cout, postf);
+			//cout << endl << endl;
+
+			_.execute(0);
+			cout << endl;
+		}
 	}
 }
 
-#include <cmath>
+// ((325 - 45.231) * 78 - 23434 / 1.00)
+
+TEST(PMM_EXPR, Previous_main) {
+	string arr[3];
+	arr[0] = "a = ((325 - 45.231) * 78 - 23434 / 1.00); b = a + 1";
+	arr[1] = "a = b; b = a + 1";
+	arr[2] = "a = 34; b = a + a; a = b";
+	run_PMME_array(arr, 3);
+}

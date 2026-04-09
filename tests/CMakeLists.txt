@@ -5,7 +5,9 @@ file(GLOB srcs "*.cpp")
 
 add_executable(${target} ${srcs} ${hdrs})
 
-target_compile_options(${target} PRIVATE "$<$<CXX_COMPILER_ID:MSVC>:/MDd>")
+if(MSVC)
+    target_compile_options(${target} PRIVATE "$<$<CONFIG:Debug>:/MDd>" "$<$<CONFIG:Release>:/MD>")
+endif()
 
 target_link_libraries(${target} gtest gtest_main ${DATA_STRUCTURES_LIBRARY} ${PMME_LIBRARY})
 

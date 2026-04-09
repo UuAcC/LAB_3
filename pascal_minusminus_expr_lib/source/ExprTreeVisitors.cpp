@@ -1,4 +1,5 @@
 #include "ExprTreeVisitors.h"
+#include "ExprExecExceprions.h"
 #include <iostream>
 
 double FPNumber::getVal() const { return std::stod(val); }
@@ -28,34 +29,46 @@ ExprRetVal CalcVisitor::visitFPNumber(FPNumber* num) {
 ExprRetVal CalcVisitor::visitBiOperation(BiOperation* op) {
 	if (!table_inited) { var_table = ExprVarTable(); table_inited = true; }
 
+	char oper = op->getOp()[0];
+
 	ExprRetVal left = op->getLeft()->accept(this);
 	ExprRetVal right = op->getRight()->accept(this);
 
-	char oper = op->getOp()[0];
+	if (!right.hv_dval && oper != ';')
+		throw new EEE_invalid_argument("variable \"" + (string)right + "\" is not initialized.\n");
+	double dr = (double)right;
+
+	ExprRetVal result;
 	if (oper == '=') {
-		var_table.insert(ExprVarData((string)left, (double)right));
-		return (string)left;
+		string ls = (string)left;
+		if (var_table.contains(ls)) { var_table[ls] = dr; }
+		else { var_table.insert(ExprVarData(ls, dr)); }
+		
+		cerr << ls << " = " << dr << ";\n";
+		result.set_var_name(ls);
 	}
-	else { // из-за этого придется изменить парсер )
-		double dl = (double)left, dr = (double)right;
+	else { 
+		double dl = (double)left;
 		switch (oper) {
-		case '+': return dl + dr;
-		case '-': return dl - dr;
-		case '*': return dl * dr;
-		case '/': return dl / dr;
+		case '+': result.set_doub_val(dl + dr); break;
+		case '-': result.set_doub_val(dl - dr); break;
+		case '*': result.set_doub_val(dl * dr); break;
+		case '/': result.set_doub_val(dl / dr); break;
 
-		case '>': return ExprRetVal(dl > dr);
-		case '<': return ExprRetVal(dl < dr);
+		// из-за этого придется изменить парсер )
+		case '>': result.set_bool_val(dl > dr); break;
+		case '<': result.set_bool_val(dl < dr); break;
 
-		default: return 0.0;
+		default: break;
 		}
 	}
+	return result;
 }
 ExprRetVal CalcVisitor::visitVariable(Variable* var) {
 	string name = var->getName();
 	ExprRetVal res = ExprRetVal(name);
-	if (var_table.contains(name)) 
-		res.doub_val = var_table[name];
+	if (var_table.contains(name))
+		res.set_doub_val(var_table[name]);
 	return res;
 }
 

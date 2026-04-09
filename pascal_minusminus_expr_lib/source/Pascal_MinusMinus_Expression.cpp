@@ -1,4 +1,5 @@
 #include "Pascal_MinusMinus_Expression.h"
+#include "ExprExecExceprions.h"
 
 LEX_TYPE PMM_EXPR::decode(char c) {
     switch (c) {
@@ -41,16 +42,21 @@ bool PMM_EXPR::run_analyzer(bool print_smth) {
     return res;
 }
 
-void PMM_EXPR::execute() {
-    Expr* tree = get_tree();
-    run_analyzer();
-    CalcVisitor cv;
-    tree->accept(&cv);
+void PMM_EXPR::execute(bool da) {
+    try { 
+        Expr* tree = get_tree();
+        if (da) { run_analyzer(); }
+        CalcVisitor cv;
+        tree->accept(&cv);
+    }
+    catch (ExprExecException* err) {
+        cout << err->message();
+    }
 }
 
-void PMM_EXPR::print() {
+void PMM_EXPR::print(bool da) {
     Expr* tree = get_tree();
-    run_analyzer();
+    if (da) { run_analyzer(); }
     PrintVisitor pv;
     tree->accept(&pv);
 }

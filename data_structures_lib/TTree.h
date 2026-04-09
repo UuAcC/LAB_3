@@ -257,7 +257,7 @@ public:
 
 	bool contains(const T& v) const {
 		if (root == nullptr) {
-			throw TREE_IS_EMPTY;
+			return false;
 		}
 		TreeNode<T>* t = root;
 		while (t != nullptr) {

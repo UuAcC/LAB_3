@@ -92,7 +92,7 @@ syntaxer_fp ANALYZER::sc_call(STATE st, LEX_TYPE tp) {
 }
 
 syntaxer_fp ANALYZER::sc_funcs[60]{
-	sc_f0, sc_f0, sc_f0, sc_f0, sc_f1, sc_f0, sc_f1, sc_f1, sc_f1, sc_f1,
+	sc_f1, sc_f1, sc_f0, sc_f1, sc_f1, sc_f1, sc_f1, sc_f1, sc_f1, sc_f1,
 	sc_f1, sc_f1, sc_f1, sc_f1, sc_f1, sc_f0, sc_f0, sc_f0, sc_f0, sc_f1,
 	sc_f0, sc_f0, sc_f0, sc_f0, sc_f1, sc_f0, sc_f1, sc_f1, sc_f1, sc_f1,
 	sc_f1, sc_f1, sc_f1, sc_f1, sc_f0, sc_f0, sc_f0, sc_f0, sc_f1, sc_f0,
@@ -105,7 +105,7 @@ STATE ANALYZER::sc_next(STATE st, LEX_TYPE tp) {
 }
 
 STATE ANALYZER::sc_states[60]{
-	ST3, ST3, ST1, ST2, STX, ST4, STX, STX, STX, STX,
+	STX, STX, ST1, STX, STX, STX, STX, STX, STX, STX,
 	STX, STX, STX, STX, STX, ST4, ST4, ST5, ST2, STX,
 	ST3, ST3, ST3, ST2, STX, ST4, STX, STX, STX, STX,
 	STX, STX, STX, STX, ST3, ST4, ST4, ST5, STX, ST0,
@@ -125,7 +125,7 @@ bool ANALYZER::syntax_check(TQueue<LEXEM> que) {
 			sc_call(st, curr.type)(curr);
 			st = sc_next(st, curr.type);
 		}
-		catch (const lexem& lex) { curr_errors.push(error(i, curr.value)); }
+		catch (...) { curr_errors.push(error(i, curr.value)); }
 	}
 	if (st != ST3 && (curr_errors.top().index != i)) { curr_errors.push(error(i, curr.value)); }
 	last_errors = curr_errors;

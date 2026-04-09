@@ -313,8 +313,11 @@ Expr* PARCER::parce_tree(const TQueue<LEXEM>& que) {
     TStack<Expr*> treeStack(sz);
     while (!postf.isEmpty()) {
         lexem item = postf.pop();
-        if (item.type == VAR || item.type == NUM || item.type == ZERO) {
+        if (item.type == NUM || item.type == ZERO) {
             treeStack.push(init_fpnumber(item.value));
+        }
+        else if (item.type == VAR) {
+            treeStack.push(init_variable(item.value));
         }
         else {
             Expr* r = treeStack.pop();

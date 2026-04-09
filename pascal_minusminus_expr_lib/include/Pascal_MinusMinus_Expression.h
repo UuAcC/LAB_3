@@ -163,11 +163,11 @@ private:
 
         // --------------------------------------------------------------------------------------------
         //                           Finite state machine for syntax_check function:
-        // FUUUUUUUCK nill kiggers nuck figgers and nate higgers
+        //
         //    |------|---|-----|-----|---|---|-------|---|---|---|---|     |------|---|-----|-----|---|---|-------|---|---|---|---|
         //    | next | 0 | int | var | ( | ) | [+,-] | * | / | = | ; |     | call | 0 | int | var | ( | ) | [+,-] | * | / | = | ; |
         //    |------|---|-----|-----|---|---|-------|---|---|---|---|     |------|---|-----|-----|---|---|-------|---|---|---|---|
-        //    | ST0  |ST3| ST3 | ST1 |ST2|STx|  ST4  |STx|STx|STx|STx|     | ST0  | f0|  f0 |  f0 | f0| f1|   f0  | f1| f1| f1| f1|
+        //    | ST0  |STx| STx | ST1 |STx|STx|  STx  |STx|STx|STx|STx|     | ST0  | f1|  f1 |  f0 | f1| f1|   f1  | f1| f1| f1| f1|
         //    |------|---|-----|-----|---|---|-------|---|---|---|---|     |------|---|-----|-----|---|---|-------|---|---|---|---|
         //    | ST1  |STx| STx | STx |STx|STx|  ST4  |ST4|ST5|ST2|STx|     | ST1  | f1|  f1 |  f1 | f1| f1|   f0  | f0| f0| f0| f1| 
         //    |------|---|-----|-----|---|---|-------|---|---|---|---|     |------|---|-----|-----|---|---|-------|---|---|---|---|
@@ -229,7 +229,7 @@ public:
     // Function that runs all analyzes, returns true if all checks passed
     bool run_analyzer(bool print_smth = 0);
     // Executes the code
-    void execute();
+    void execute(bool do_analysis = 1);
 
-    void print();
+    void print(bool do_analysis = 1);
 };

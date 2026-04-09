@@ -19,7 +19,7 @@ bool ExprVarData::operator!=(const ExprVarData& oth) const {
 	return !(*this == oth);
 }
 
-double ExprVarTable::operator[](const string& nm) const {
+double& ExprVarTable::operator[](const string& nm) {
 	if (root == nullptr) { throw TREE_IS_EMPTY; }
 	TreeNode<ExprVarData>* t = root;
 	ExprVarData v(nm);

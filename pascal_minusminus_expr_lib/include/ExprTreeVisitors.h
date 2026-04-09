@@ -6,13 +6,22 @@ struct ExprRetVal {
 	double doub_val;
 	bool bool_value;
 
-	ExprRetVal(string _vn) : var_name(_vn) {}
-	ExprRetVal(double _dv) : doub_val(_dv) {}
-	ExprRetVal(bool _bv) : bool_value(_bv) {}
+	bool hv_name = false;
+	bool hv_dval = false;
+	bool hv_bval = false;
+
+	ExprRetVal() {}
+	ExprRetVal(string _vn) : var_name(_vn), hv_name(true) {}
+	ExprRetVal(double _dv) : doub_val(_dv), hv_dval(true) {}
+	ExprRetVal(bool _bv) : bool_value(_bv), hv_bval(true) {}
 
 	inline explicit operator string() const { return var_name; }
 	inline explicit operator double() const { return doub_val; }
 	inline explicit operator bool() const { return bool_value; }
+
+	inline void set_var_name(string _vn) { var_name = _vn; hv_name = true; }
+	inline void set_doub_val(double _dv) { doub_val = _dv; hv_dval = true; }
+	inline void set_bool_val(bool _bv) { bool_value = _bv; hv_bval = true; }
 };
 
 class FPNumber;
