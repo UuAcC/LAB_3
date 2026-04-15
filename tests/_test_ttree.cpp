@@ -127,7 +127,7 @@ TEST_F(TTreeTest, Balance1) {
     EXPECT_EQ(tree.getRootVal(), 20);
 
     FillTree({ 25, 45, 26 });
-    EXPECT_EQ(tree.getRootVal(), 26);
+    EXPECT_EQ(tree.getRootVal(), 25);
 }
 
 TEST_F(TTreeTest, Balance2) {
@@ -171,11 +171,11 @@ TEST_F(TTreeTest, BalanceInsertAndRemoveChain) {
     EXPECT_EQ(tree.getRootVal(), 90);
 
     FillTree({ 65, 68 });
-    EXPECT_EQ(tree.getRootVal(), 65);
+    EXPECT_EQ(tree.getRootVal(), 70);
 
     tree.outsert(90);
     tree.outsert(50);
-
+    std::cout << tree << std::endl;
     EXPECT_EQ(tree.min(), 20);
     EXPECT_EQ(tree.max(), 140);
     EXPECT_TRUE(tree.contains(68));

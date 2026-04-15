@@ -45,8 +45,8 @@ void run_PMME_array(string arr[], int sz) {
 
 TEST(PMM_EXPR, Previous_main) {
 	string arr[3];
-	arr[0] = "a = ((325 - 45.231) * 78 - 23434 / 1.00); b = a + 1";
-	arr[1] = "a = b; b = a + 1";
-	arr[2] = "a = 34; b = a + a; a = b";
+	arr[0] = "a = 34; b = a + a; a = b";
+	arr[1] = "a = ((325 - 45.231) * 78 - 23434 / 1.00); b = a + 1";
+	arr[2] = "a = b; b = a + 1";
 	run_PMME_array(arr, 3);
 }

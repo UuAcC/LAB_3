@@ -46,8 +46,10 @@ void PMM_EXPR::execute(bool da) {
     try { 
         Expr* tree = get_tree();
         if (da) { run_analyzer(); }
-        CalcVisitor cv;
-        tree->accept(&cv);
+        //CalcVisitor cv;
+        //tree->accept(&cv);
+        IterativeExecutor ie;
+        ie.run(tree);
     }
     catch (ExprExecException* err) {
         cout << err->message();

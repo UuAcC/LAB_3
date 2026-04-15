@@ -53,18 +53,7 @@ private:
 	}
 
 	TreeNode<T>* SLRotate(TreeNode<T>* curr) {
-		//if (!curr || !curr->r) return curr;
-
-		int balance = getDiff(curr->r, curr->l);
-		//if (balance < 2) return curr;
-
 		TreeNode<T>* right = curr->r;
-
-		int rightBalance = getDiff(right->r, right->l);
-		if (rightBalance < 0) {
-			curr->r = SRRotate(right);
-			right = curr->r;
-		}
 		TreeNode<T>* p2 = right->l;
 
 		curr->r = p2;
@@ -76,19 +65,7 @@ private:
 		return right;
 	}
 	TreeNode<T>* SRRotate(TreeNode<T>* curr) {
-		//if (!curr || !curr->l) return curr;
-
-		int balance = getDiff(curr->r, curr->l);
-		//if (balance > -2) return curr;
-
 		TreeNode<T>* left = curr->l;
-
-		int leftBalance = getDiff(left->r, left->l);
-		if (leftBalance > 0) {
-			curr->l = SLRotate(left);
-			left = curr->l;
-		}
-
 		TreeNode<T>* p2 = left->r;
 
 		curr->l = p2;
@@ -160,11 +137,11 @@ public:
 		} return *this;
 	}
 
-	TTree(TTree<T>&& other) {
+	TTree(TTree<T>&& other) noexcept {
 		root = other.root;
 		other.root = nullptr;
 	}
-	TTree& operator=(TTree&& other) {
+	TTree& operator=(TTree&& other) noexcept {
 		if (this != &other) {
 			root = other.root;
 			other.root = nullptr;
