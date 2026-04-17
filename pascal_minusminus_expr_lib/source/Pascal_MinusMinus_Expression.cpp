@@ -1,5 +1,6 @@
 #include "Pascal_MinusMinus_Expression.h"
 #include "ExprExecExceprions.h"
+#include "ExprRecursiveVisitors.h"
 
 LEX_TYPE PMM_EXPR::decode(char c) {
     switch (c) {

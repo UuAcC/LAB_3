@@ -2,8 +2,8 @@
 #include <stack>
 using namespace std;
 
-#include "ExprTreeNodes.h"
-#include "ExprTreeVisitors.h"
+#include "ExprBaseVisitor.h"
+#include "ExprVarTable.h"
 
 struct ExecNode {
 	Expr* exp;
