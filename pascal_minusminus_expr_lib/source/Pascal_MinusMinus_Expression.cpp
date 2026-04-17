@@ -5,11 +5,11 @@
 LEX_TYPE PMM_EXPR::decode(char c) {
     switch (c) {
     case '0': return LexemType::zero;
-    case '(': return LexemType::l_br;
-    case ')': return LexemType::r_br;
+    case '(': return LexemType::l_round_br;
+    case ')': return LexemType::r_round_br;
     case '.': return LexemType::dot;
     case '+':
-    case '-': return LexemType::bop;
+    case '-': return LexemType::add_sub;
     case '*': return LexemType::mul;
     case '/': return LexemType::div;
     case '=': return LexemType::equal;
@@ -27,26 +27,9 @@ PMM_EXPR::Pascal_MinusMinus_Expression(string _infix) {
     expression_tree = nullptr;
 }
 
-bool PMM_EXPR::run_analyzer(bool print_smth) {
-    bool res = true;
-
-    bool lx_c = Analyzer::lexic_check(q_infix);
-    if (print_smth) 
-        Analyzer::print_error_message(); 
-    res &= lx_c;
-
-    bool sy_c = Analyzer::syntax_check(q_infix); 
-    if (print_smth) 
-        Analyzer::print_error_message(); 
-    res &= sy_c;
-
-    return res;
-}
-
-void PMM_EXPR::execute(bool da) {
+void PMM_EXPR::execute() {
     try { 
         Expr* tree = get_tree();
-        if (da) { run_analyzer(); }
         //CalcVisitor cv;
         //tree->accept(&cv);
         IterativeExecutor ie;
@@ -57,9 +40,8 @@ void PMM_EXPR::execute(bool da) {
     }
 }
 
-void PMM_EXPR::print(bool da) {
+void PMM_EXPR::print() {
     Expr* tree = get_tree();
-    if (da) { run_analyzer(); }
     PrintVisitor pv;
     tree->accept(&pv);
 }

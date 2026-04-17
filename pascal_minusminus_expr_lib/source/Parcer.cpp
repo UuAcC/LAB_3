@@ -1,21 +1,6 @@
 #include "Pascal_MinusMinus_Expression.h"
 
-#define ZERO LexemType::zero
-#define NUM LexemType::num
-#define DOT LexemType::dot
-
-#define VAR LexemType::variable
-
-#define L_BR LexemType::l_br
-#define R_BR LexemType::r_br
-#define SMCLN LexemType::semicolon
-
-#define BOP LexemType::bop
-#define MUL LexemType::mul
-#define DIV LexemType::div
-#define EQ LexemType::equal
-
-#define NAL LexemType::not_a_lexem
+#include "LexTypeDefines.h"
 
 using parcer_fp = void(*)(char);
 
@@ -50,14 +35,15 @@ vector<LEXEM> PARCER::pi_v_buffer;
 inline void PARCER::pi_f0(char c) { pi_v_buffer.push_back(lexem(string(1, c), decode(c))); }
 inline void PARCER::pi_f1(char c) { pi_s_buffer = string(1, c); }
 inline void PARCER::pi_f2(char c) {
-    pi_v_buffer.push_back(lexem(pi_s_buffer, type_num(pi_s_buffer)));
+    pi_v_buffer.push_back(lexem(pi_s_buffer, determine_lex_type(pi_s_buffer)));
     pi_v_buffer.push_back(lexem(string(1, c), decode(c)));
     pi_s_buffer.clear();
 }
 inline void PARCER::pi_f3(char c) { pi_s_buffer += c; }
 
-LEX_TYPE PARCER::type_num(string str) {
+LEX_TYPE PARCER::determine_lex_type(string str) {
     if (str == "0") return ZERO;
+    else if (str == "while") return WHILE;
     for (char c : str) {
         if (CHAR_IN_LETTERS) return VAR;
     } return NUM;
@@ -101,7 +87,7 @@ TQueue<LEXEM> PARCER::parce_infix(const string& str) {
         catch (char c) { curr_errors.push(error(i, c)); }
     }
     if (!pi_s_buffer.empty())
-        pi_v_buffer.push_back(lexem(pi_s_buffer, type_num(pi_s_buffer)));
+        pi_v_buffer.push_back(lexem(pi_s_buffer, determine_lex_type(pi_s_buffer)));
     pi_s_buffer.clear();
     // Convert vector to queue for result
     TQueue<lexem> res(pi_v_buffer);
@@ -191,13 +177,13 @@ void PARCER::unary_handle(TQueue<LEXEM>& _infix) noexcept {
     vector<lexem> buffer(_infix.to_vector());
     auto iterator = buffer.begin();
     LEX_TYPE pvi = buffer[0].type;
-    if (pvi == BOP) {
+    if (pvi == ADSB) {
         buffer.insert(iterator, lexem("0", ZERO));
     }
     iterator = buffer.begin();
     for (int i = 1; i < buffer.size(); ++i) {
         pvi = buffer[i].type;
-        if (buffer[i - 1].type == L_BR && (pvi == BOP)) {
+        if (buffer[i - 1].type == L_R_BR && (pvi == ADSB)) {
             buffer.insert(iterator + i, lexem("0", ZERO));
         }
     }
@@ -221,12 +207,12 @@ TQueue<LEXEM> PARCER::parce_postfix(const TQueue<LEXEM>& in) {
     while (!inf.isEmpty()) {
         lexem item = inf.pop();
         switch (item.type) {
-        case L_BR:
+        case L_R_BR:
             st.push(item);
             break;
-        case R_BR:
+        case R_R_BR:
             stackItem = st.pop();
-            while (stackItem.type != L_BR) {
+            while (stackItem.type != L_R_BR) {
                 postf.push(stackItem);
                 stackItem = st.pop();
             }
@@ -252,60 +238,6 @@ TQueue<LEXEM> PARCER::parce_postfix(const TQueue<LEXEM>& in) {
 }
 // --------------------------------------------------------------------------------------------
 
-//Expr* PARCER::parce_tree(const TQueue<LEXEM>& in) {
-//    TQueue<lexem> inf(in); unary_handle(inf);
-//
-//    size_t sz = inf.get_size();
-//
-//    TStack<lexem> tempStack(sz);
-//    TStack<Expr*> treeStack(sz);
-//
-//    lexem stackItem;
-//    while (!inf.isEmpty()) {
-//        lexem item = inf.pop();
-//        switch (item.type) {
-//        case L_BR:
-//            tempStack.push(item);
-//            break;
-//        case R_BR:
-//            stackItem = tempStack.pop();
-//            while (stackItem.type != L_BR) {
-//                Expr* r = treeStack.pop();
-//                Expr* l = treeStack.pop();
-//                Expr* newNode = init_bioperation(stackItem.value, l, r);
-//                treeStack.push(newNode);
-//                stackItem = tempStack.pop();
-//            }
-//            break;
-//        case MUL:
-//        case DIV:
-//        case BOP:
-//            while (!tempStack.isEmpty()) {
-//                stackItem = tempStack.top();
-//                if (priority[item.value] <= priority[stackItem.value]) {
-//                    Expr* r = treeStack.pop();
-//                    Expr* l = treeStack.pop();
-//                    Expr* newNode = init_bioperation(tempStack.pop().value, l, r);
-//                    treeStack.push(newNode);
-//                }
-//                else { break; }
-//            } tempStack.push(item);
-//            break;
-//        default:
-//            treeStack.push(init_fpnumber(item.value));
-//        }
-//    }
-//    while (!tempStack.isEmpty()) {
-//        stackItem = tempStack.pop();
-//        Expr* r = treeStack.pop();
-//        Expr* l = treeStack.pop();
-//        Expr* newNode = init_bioperation(stackItem.value, l, r);
-//        treeStack.push(newNode);
-//    }
-//    Expr* res = treeStack.pop();
-//    return res;
-//}
-
 Expr* PARCER::parce_tree(const TQueue<LEXEM>& que) {
     TQueue<lexem> postf(que);
     size_t sz = postf.get_size();
@@ -328,3 +260,5 @@ Expr* PARCER::parce_tree(const TQueue<LEXEM>& que) {
     }
     return treeStack.pop();
 }
+
+

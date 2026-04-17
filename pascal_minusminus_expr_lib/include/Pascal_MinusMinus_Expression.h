@@ -11,7 +11,6 @@
 #define PMM_EXPR Pascal_MinusMinus_Expression
 
 #define PARCER PMM_EXPR::Parcer
-#define ANALYZER PMM_EXPR::Analyzer
 
 #define LEX_TYPE PMM_EXPR::LexemType
 #define LEXEM PMM_EXPR::lexem
@@ -23,10 +22,14 @@
 #define CHAR_IN_UC c >= 65 && c <= 90
 #define CHAR_IN_LETTERS CHAR_IN_LC || CHAR_IN_UC
 
+// from dot to num
 #define CHAR_IN_INTS tp >= 0 && tp <= 2
+// from zero to num
 #define CHAR_IN_INTS_ND tp >= 1 && tp <= 2
+// from dot to var 
 #define CHAR_IS_OPERAND tp >= 0 && tp <= 3
 
+// from l_round_br to semicolon
 #define CHAR_IS_OPERATION tp >= 4 && tp <= 10
 
 using namespace std;
@@ -36,9 +39,17 @@ using pmme_fp = double(*)(double, double);
 class Pascal_MinusMinus_Expression {
 public:
     // Enumeration of possible lexeme types in arithmetic expression
-    enum class LexemType { 
-        dot, zero, num, variable, 
-        l_br, r_br, bop, mul, div, equal, semicolon, 
+    enum class LexemType {              // in tree:
+        dot, 
+        zero, num,                              // fpnumber
+        variable,                               // variable
+        l_round_br, r_round_br,
+        add_sub, mul, div, equal, semicolon,    // bioperation
+        l_curly_br, r_curly_br,
+        keyword_while,                          // operator_while
+        keyword_if,                             // operator_if
+        keyword_else,                           // operator_else
+        keyword_print,                          // not yet
         not_a_lexem 
     };
     // Function that determines the type of a char
@@ -69,8 +80,7 @@ private:
 
         // Operator priority mapping
         static map<string, int> priority;
-        // Function that determines if a string represents a number type
-        static LEX_TYPE type_num(string str);
+        static LEX_TYPE determine_lex_type(string str);
 
         // --------------------------------------------------------------------------------------------
         //                Finite state machine for parce_infix function:
@@ -155,59 +165,6 @@ private:
         // Converts string representation of number to double value
         static double to_double(const string& str);
     };
-    // Class containing static methods for analyzing arithmetic expression correctness
-    class Analyzer {
-        // Name of the last executed function
-        static string last_func;
-        // Queue of errors that occurred during the last function execution
-        static TQueue<ERROR> last_errors;
-
-        // --------------------------------------------------------------------------------------------
-        //                           Finite state machine for syntax_check function:
-        //
-        //    |------|---|-----|-----|---|---|-------|---|---|---|---|     |------|---|-----|-----|---|---|-------|---|---|---|---|
-        //    | next | 0 | int | var | ( | ) | [+,-] | * | / | = | ; |     | call | 0 | int | var | ( | ) | [+,-] | * | / | = | ; |
-        //    |------|---|-----|-----|---|---|-------|---|---|---|---|     |------|---|-----|-----|---|---|-------|---|---|---|---|
-        //    | ST0  |STx| STx | ST1 |STx|STx|  STx  |STx|STx|STx|STx|     | ST0  | f1|  f1 |  f0 | f1| f1|   f1  | f1| f1| f1| f1|
-        //    |------|---|-----|-----|---|---|-------|---|---|---|---|     |------|---|-----|-----|---|---|-------|---|---|---|---|
-        //    | ST1  |STx| STx | STx |STx|STx|  ST4  |ST4|ST5|ST2|STx|     | ST1  | f1|  f1 |  f1 | f1| f1|   f0  | f0| f0| f0| f1| 
-        //    |------|---|-----|-----|---|---|-------|---|---|---|---|     |------|---|-----|-----|---|---|-------|---|---|---|---|
-        //    | ST2  |ST3| ST3 | ST3 |ST2|STx|  ST4  |STx|STx|STx|STx|     | ST2  | f0|  f0 |  f0 | f0| f1|   f0  | f1| f1| f1| f1|
-        //    |------|---|-----|-----|---|---|-------|---|---|---|---|     |------|---|-----|-----|---|---|-------|---|---|---|---|
-        //    | ST3  |STx| STx | STx |STx|ST3|  ST4  |ST4|ST5|STx|ST0|     | ST3  | f1|  f1 |  f1 | f1| f0|   f0  | f0| f0| f1| f0|
-        //    |------|---|-----|-----|---|---|-------|---|---|---|---|     |------|---|-----|-----|---|---|-------|---|---|---|---|
-        //    | ST4  |ST3| ST3 | ST3 |ST2|STx|  STx  |STx|STx|STx|STx|     | ST4  | f0|  f0 |  f0 | f0| f1|   f1  | f1| f1| f1| f1|
-        //    |------|---|-----|-----|---|---|-------|---|---|---|---|     |------|---|-----|-----|---|---|-------|---|---|---|---|
-        //    | ST5  |STx| ST3 | ST3 |ST2|STx|  STx  |STx|STx|STx|STx|     | ST5  | f1|  f0 |  f0 | f0| f1|   f1  | f1| f1| f1| f1|
-        //    |------|---|-----|-----|---|---|-------|---|---|---|---|     |------|---|-----|-----|---|---|-------|---|---|---|---|
-
-
-        // Returns function pointer from sc_funcs based on current state and lexeme type
-        static void (*sc_call(STATE st, LEX_TYPE tp))(LEXEM);
-        // Array containing function pointers for syntax_check finite state machine
-        static void (*sc_funcs[])(LEXEM);
-
-        // Returns next state from sc_states based on current state and lexeme type
-        static STATE sc_next(STATE st, LEX_TYPE tp);
-        // Array containing state transitions for syntax_check finite state machine
-        static STATE sc_states[];
-
-        // Helper functions for syntax_check finite state machine
-
-        static inline void sc_f0(LEXEM lex);
-        static inline void sc_f1(LEXEM lex);
-    public:
-        // Checks if errors occurred during the last function execution
-        static inline bool errors_occured() { return !last_errors.isEmpty(); };
-        // Prints error message to stderr with last function name and errors
-        static void print_error_message();
-        // Checks parentheses balance in the arithmetic expression (OLD FUNCTION)
-        static bool skobochniy_check(const string& str);
-        // Performs lexical analysis of arithmetic expression (uses PARCER::to_double)
-        static bool lexic_check(TQueue<LEXEM> que);
-        // Performs syntactic analysis of arithmetic expression
-        static bool syntax_check(TQueue<LEXEM> que);
-    };
 private:
     string s_infix; // String representation of infix arithmetic expression
     TQueue<lexem> q_infix; // Infix notation represented as lexeme queue
@@ -227,10 +184,8 @@ public:
             expression_tree = Parcer::parce_tree(get_q_postfix());
         return expression_tree;
     }
-    // Function that runs all analyzes, returns true if all checks passed
-    bool run_analyzer(bool print_smth = 0);
     // Executes the code
-    void execute(bool do_analysis = 1);
+    void execute();
 
-    void print(bool do_analysis = 1);
+    void print();
 };

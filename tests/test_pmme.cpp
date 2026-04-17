@@ -21,23 +21,8 @@ void run_PMME_array(string arr[], int sz) {
 	for (int i = 0; i < sz; ++i) {
 		cout << arr[i] << endl;
 		PMM_EXPR _(arr[i]);
-		bool run_res = _.run_analyzer(1);
-		if (run_res) {
-			//cout << endl;
-
-			TQueue<LEXEM> inf = _.get_q_infix();
-
-			//print_lexem_queue(cout, inf);
-			//cout << endl << endl;
-
-			TQueue<LEXEM> postf = _.get_q_postfix();
-
-			//print_lexem_queue(cout, postf);
-			//cout << endl << endl;
-
-			_.execute(0);
-			cout << endl;
-		}
+		_.execute();
+		cout << endl;
 	}
 }
 
