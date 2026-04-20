@@ -1,5 +1,5 @@
 #include "ExprBaseVisitor.h"
-#include "Pascal_MinusMinus_Expression.h"
+#include "ExprTreeNodes.h"
 #include <iostream>
 
 PMM_EXPR::BiNode::BiNode(Node* l, Node* r) : left(l), right(r) {}
@@ -61,9 +61,14 @@ PMM_EXPR::NodeRetVal PMM_EXPR::IfElse::accept(Visitor* v) {
     return v->visitIfElse(this);
 }
 
-PMM_EXPR::Operator::Operator(EqOper* l) : BiNode(l) {}
-PMM_EXPR::Operator::Operator(Comp* l, Expr* r) : BiNode(l, r) {}
-PMM_EXPR::Operator::Operator(IfElse* l) : BiNode(l) {}
+PMM_EXPR::WhileOper::WhileOper(Comp* l, Expr* r) : BiNode(l, r) {}
+PMM_EXPR::NodeRetVal PMM_EXPR::WhileOper::accept(Visitor* v) {
+    return v->visitWhileOper(this);
+}
+
+PMM_EXPR::Operator::Operator(EqOper* c) : child(c) {}
+PMM_EXPR::Operator::Operator(WhileOper* c) : child(c) {}
+PMM_EXPR::Operator::Operator(IfElse* c) : child(c) {}
 PMM_EXPR::NodeRetVal PMM_EXPR::Operator::accept(Visitor* v) {
     return v->visitOperator(this);
 }

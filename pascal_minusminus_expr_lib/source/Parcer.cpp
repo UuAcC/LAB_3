@@ -1,5 +1,4 @@
-#include "Pascal_MinusMinus_Expression.h"
-
+#include "Parcer.h"
 #include "LexTypeDefines.h"
 
 using parcer_fp = void(*)(char);
@@ -216,76 +215,158 @@ PMM_EXPR::Terminal* PARCER::init_terminal_node(lexem lex) {
 }
 
 bool PARCER::reduce(TStack<Node*>* stack, TQueue<Terminal*>* queue) {
-    int64_t res = 1;
-    TStack<Node*> currSt(7);
+    int res = 1;
+    TStack<Node*> stackOfStashed(7);
     while (!stack->isEmpty()) {
-        Node* stackItem = stack->top();
+        Node* stackItem = stack->pop();
         res *= stackItem->getCode();
         switch (res) {
-        case 2: {
-            if (queue->top()->getCode() == 19) {
-                currSt.push(stackItem);
-                stack->pop();
-                break;
+        case 2: { 
+            if (!stack->isEmpty() && stack->top()->getCode() == 19) {
+                stackOfStashed.push(stackItem); break;
             }
             Variable* term = static_cast<Variable*>(stackItem);
             stack->push(new Mon(term));
             return true;
-        } // я запутался
-        case 3: {
-            if (queue->top()->getCode() == 19) {
-                currSt.push(stackItem);
-                stack->pop();
-                break;
+        } 
+        case 3: { 
+            if (!stack->isEmpty() && stack->top()->getCode() == 19) { 
+                stackOfStashed.push(stackItem); break;
             }
             FPNumber* term = static_cast<FPNumber*>(stackItem);
             stack->push(new Mon(term));
             return true;
         }
-        case 2014: {
-            Mon* left = static_cast<Mon*>(stackItem);
-            MuDv* op = static_cast<MuDv*>(currSt.pop());
-            Variable* right = static_cast<Variable*>(currSt.pop());
+        case 2014: { 
+            Mon* left = cast<Mon>(stackItem);
+            MuDv* op = cast<MuDv>(stackOfStashed.pop());
+            Variable* right = cast<Variable>(stackOfStashed.pop());
             stack->push(new Mon(left, op->getType(), right));
             return true;
         } 
         case 3021: {
-            Mon* left = static_cast<Mon*>(stackItem);
-            MuDv* op = static_cast<MuDv*>(currSt.pop());
-            FPNumber* right = static_cast<FPNumber*>(currSt.pop());
+            Mon* left = cast<Mon>(stackItem);
+            MuDv* op = cast<MuDv>(stackOfStashed.pop());
+            FPNumber* right = cast<FPNumber>(stackOfStashed.pop());
             stack->push(new Mon(left, op->getType(), right));
             return true;
         } 
         case 53: {
+            if ((!stack->isEmpty() && stack->top()->getCode() == 17) 
+                || (!queue->isEmpty() && queue->top()->getCode() == 19))
+            {
+                stackOfStashed.push(stackItem); break;
+            } 
             Mon* mon = static_cast<Mon*>(stackItem);
             stack->push(new Pol(mon));
             return true;
         }
         case 53159: {
-            Pol* left = static_cast<Pol*>(stackItem);
-            AdSb* op = static_cast<AdSb*>(currSt.pop());
-            Mon* right = static_cast<Mon*>(currSt.pop());
+            if (!queue->isEmpty() && queue->top()->getCode() == 19) { 
+                stackOfStashed.push(stackItem); break; 
+            }
+            Pol* left = cast<Pol>(stackItem);
+            AdSb* op = cast<AdSb>(stackOfStashed.pop());
+            Mon* right = cast<Mon>(stackOfStashed.pop());
             stack->push(new Pol(left, op->getType(), right));
             return true;
         }
-        case 0b000000000000000000000: {
-
+        case 80063: {
+            Pol* left = cast<Pol>(stackItem);
+            Cop* op = cast<Cop>(stackOfStashed.pop());
+            Pol* right = cast<Pol>(stackOfStashed.pop());
+            stack->push(new Comp(left, op->getType(), right));
+            return true;
         }
-        case 0b000000000000000000000: {
-
+        case 3422: {
+            Variable* left = cast<Variable>(stackItem);
+            stackOfStashed.pop();
+            Pol* right = cast<Pol>(stackOfStashed.pop());
+            stack->push(new EqOper(left, right));
+            return true;
+        }
+        case 932096165: {
+            stackOfStashed.pop(); 
+            Comp* cond = cast<Comp>(stackOfStashed.pop());
+            stackOfStashed.pop();
+            stackOfStashed.pop();
+            Expr* expr = cast<Expr>(stackOfStashed.pop());
+            stack->push(new IfOper(cond, expr));
+            return true;
+        }
+        case 73: {
+            if (!queue->isEmpty() && queue->top()->getCode() == 47) {
+                stackOfStashed.push(stackItem); break;
+            }
+            IfOper* iop = static_cast<IfOper*>(stackItem);
+            stack->push(new IfElse(iop));
+            return true;
+        }
+        case 34834943: {
+            IfOper* iop = cast<IfOper>(stackItem);
+            stackOfStashed.pop();
+            stackOfStashed.pop();
+            Expr* expr = cast<Expr>(stackOfStashed.pop());
+            stack->push(new IfElse(iop, expr));
+            return true;
+        }
+        case 888742855: {
+            stackOfStashed.pop();
+            Comp* cond = cast<Comp>(stackOfStashed.pop());
+            stackOfStashed.pop();
+            stackOfStashed.pop();
+            Expr* expr = cast<Expr>(stackOfStashed.pop());
+            stack->push(new WhileOper(cond, expr));
+            return true;
+        }
+        case 67: {
+            EqOper* eop = static_cast<EqOper*>(stackItem);
+            stack->push(new Operator(eop));
+            return true;
+        }
+        case 79: {
+            IfElse* ieop = static_cast<IfElse*>(stackItem);
+            stack->push(new Operator(ieop));
+            return true;
+        }
+        case 89: {
+            WhileOper* wop = static_cast<WhileOper*>(stackItem);
+            stack->push(new Operator(wop));
+            return true;
+        }
+        case 83: {
+            if (!stack->isEmpty() && stack->top()->getCode() == 31) {
+                stackOfStashed.push(stackItem); break;
+            }
+            Operator* op = static_cast<Operator*>(stackItem);
+            stack->push(new Expr(op));
+            return true;
+        }
+        case 182683: {
+            Expr* expr = cast<Expr>(stackItem);
+            stackOfStashed.pop();
+            Operator* op = cast<Operator>(stackOfStashed.pop());
+            stack->push(new Expr(expr, op));
+            return true;
+        }
+        case 71: {
+            if (!queue->isEmpty()) { stackOfStashed.push(stackItem); break; } 
+            Expr* expr = static_cast<Expr*>(stackItem);
+            stack->push(new ExprTree(expr));
+            return true;
         }
         default: 
-            currSt.push(stackItem);
-            stack->pop();
+            stackOfStashed.push(stackItem);
         }
     }
-    while (!currSt.isEmpty())
-        stack->push(currSt.pop());
+    while (!stackOfStashed.isEmpty())
+        stack->push(stackOfStashed.pop());
     return false;
 }
 
 bool PARCER::shift(TStack<Node*>* stack, TQueue<Terminal*>* queue) {
-
+    if (!queue->isEmpty()) { stack->push(queue->pop()); return true; }
+    else { return false; }
 }
 
 PMM_EXPR::ExprTree* PARCER::bottomup_parce_tree(const TQueue<LEXEM>& in_que) {
@@ -299,7 +380,7 @@ PMM_EXPR::ExprTree* PARCER::bottomup_parce_tree(const TQueue<LEXEM>& in_que) {
         if (!reduce(&stack, &queue)) {
             if (!shift(&stack, &queue)) {
                 ExprTree* res = dynamic_cast<ExprTree*>(stack.pop());
-                if (!res) throw "PARSING ERROR";
+                if (!res) throw "BOTTOM-UP TREE PARSING ERROR";
                 else return res;
             }
         }

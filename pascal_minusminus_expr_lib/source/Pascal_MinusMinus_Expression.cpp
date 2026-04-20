@@ -8,8 +8,8 @@ LEX_TYPE PMM_EXPR::decode(char c) {
     case '(': return LexemType::l_round_br;
     case ')': return LexemType::r_round_br;
     case '.': return LexemType::dot;
-    case '+':
-    case '-': return LexemType::add_sub;
+    case '+': return LexemType::add;
+    case '-': return LexemType::sub;
     case '*': return LexemType::mul;
     case '/': return LexemType::div;
     case '=': return LexemType::equal;
@@ -29,7 +29,7 @@ PMM_EXPR::Pascal_MinusMinus_Expression(string _infix) {
 
 void PMM_EXPR::execute() {
     try { 
-        Expr* tree = get_tree();
+        ExprTree* tree = get_tree();
         //CalcVisitor cv;
         //tree->accept(&cv);
         IterativeExecutor ie;

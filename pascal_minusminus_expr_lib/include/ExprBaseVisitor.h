@@ -16,6 +16,7 @@ public:
 
 	virtual NRV visitIfOper(PMM_EXPR::IfOper* num) = 0;
 	virtual NRV visitIfElse(PMM_EXPR::IfElse* num) = 0;
+	virtual NRV visitWhileOper(PMM_EXPR::WhileOper* num) = 0;
 
 	virtual NRV visitOperator(PMM_EXPR::Operator* num) = 0;
 	virtual NRV visitExpr(PMM_EXPR::Expr* num) = 0;
