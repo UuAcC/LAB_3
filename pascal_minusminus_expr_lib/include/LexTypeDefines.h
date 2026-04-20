@@ -14,11 +14,18 @@
         X(WHILE, LEX_TYPE::keyword_while) \
         X(IF, LEX_TYPE::keyword_if) \
         X(ELSE, LEX_TYPE::keyword_else) \
-    X(ADSB, LEX_TYPE::add_sub) \
+    X(ADD, LEX_TYPE::add) \
+    X(SUB, LEX_TYPE::sub) \
     X(MUL, LEX_TYPE::mul) \
     X(DIV, LEX_TYPE::div) \
     X(EQ, LEX_TYPE::equal) \
-        X(NAL, LEX_TYPE::not_a_lexem) 
+        X(C_EQ, LEX_TYPE::c_equal) \
+        X(C_NEQ, LEX_TYPE::c_not_equal) \
+        X(C_M, LEX_TYPE::c_more) \
+        X(C_ME, LEX_TYPE::c_more_equal) \
+        X(C_L, LEX_TYPE::c_less) \
+        X(C_LE, LEX_TYPE::c_less_equal) \
+    X(NAL, LEX_TYPE::not_a_lexem) 
 
 #define X(name, value) constexpr LEX_TYPE name = value;
 LIST_OF_MACROS

@@ -6,23 +6,21 @@ using namespace std;
 #include "ExprVarTable.h"
 
 struct ExecNode {
-	Expr* exp;
+	PMM_EXPR::Node* nod;
 	bool status;
-	ExecNode(Expr* e, bool st) : exp(e), status(st) {}
+	ExecNode(PMM_EXPR::Node* n, bool st) : nod(n), status(st) {}
 };
 
 class IterativeExecutor : public Visitor {
-	stack<ExprRetVal> exvalues;
+	stack<NRV> exvalues;
 	stack<ExecNode> exstack;
 	bool last_status;
 
 	ExprVarTable var_table;
 	bool table_inited = false;
 private:
-	virtual ExprRetVal visitFPNumber(FPNumber* num) override;
-	virtual ExprRetVal visitBiOperation(BiOperation* op) override;
-	virtual ExprRetVal visitVariable(Variable* var) override;
+	
 public:
 	IterativeExecutor() : last_status(false) {}
-	void run(Expr* tree);
+	void run(PMM_EXPR::ExprTree* tree);
 };

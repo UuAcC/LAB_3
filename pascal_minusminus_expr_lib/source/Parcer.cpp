@@ -177,13 +177,13 @@ void PARCER::unary_handle(TQueue<LEXEM>& _infix) noexcept {
     vector<lexem> buffer(_infix.to_vector());
     auto iterator = buffer.begin();
     LEX_TYPE pvi = buffer[0].type;
-    if (pvi == ADSB) {
+    if (pvi == ADD || pvi == SUB) {
         buffer.insert(iterator, lexem("0", ZERO));
     }
     iterator = buffer.begin();
     for (int i = 1; i < buffer.size(); ++i) {
         pvi = buffer[i].type;
-        if (buffer[i - 1].type == L_R_BR && (pvi == ADSB)) {
+        if (buffer[i - 1].type == L_R_BR && (pvi == ADD || pvi == SUB)) {
             buffer.insert(iterator + i, lexem("0", ZERO));
         }
     }
@@ -191,74 +191,119 @@ void PARCER::unary_handle(TQueue<LEXEM>& _infix) noexcept {
 }
 // --------------------------------------------------------------------------------------------
 
-// --------------------------------------------------------------------------------------------
-
-map<string, int> PARCER::priority{
-    {";", 0}, {"=", 1}, {"(", 2}, {"+", 3}, {"-", 3}, {"*", 4}, {"/", 4}
-};
-
-TQueue<LEXEM> PARCER::parce_postfix(const TQueue<LEXEM>& in) {
-    TQueue<lexem> inf(in); unary_handle(inf);
-
-    size_t sz = inf.get_size();
-    TQueue<lexem> postf(sz);
-    TStack<lexem> st(sz);
-    lexem stackItem;
-    while (!inf.isEmpty()) {
-        lexem item = inf.pop();
-        switch (item.type) {
-        case L_R_BR:
-            st.push(item);
-            break;
-        case R_R_BR:
-            stackItem = st.pop();
-            while (stackItem.type != L_R_BR) {
-                postf.push(stackItem);
-                stackItem = st.pop();
-            }
-            break;
-        case VAR:
-        case ZERO:
-        case NUM:
-            postf.push(item); break;
-        default:
-            while (!st.isEmpty()) {
-                stackItem = st.top();
-                if (priority[item.value] <= priority[stackItem.value])
-                    postf.push(st.pop());
-                else { break; }
-            } st.push(item);
-        }
+PMM_EXPR::Terminal* PARCER::init_terminal_node(lexem lex) {
+    switch (lex.type) {
+    case ADD:
+    case SUB: return new AdSb(lex);
+    case MUL:
+    case DIV: return new MuDv(lex);
+    case EQ: return new Eq();
+        case C_EQ:
+        case C_NEQ:
+        case C_M:
+        case C_ME:
+        case C_L:
+        case C_LE: return new Cop(lex);
+    case SMCLN: return new SmCln();
+        case L_R_BR: return new LRBr();
+        case R_R_BR: return new RRBr();
+        case L_C_BR: return new LCBr();
+        case R_C_BR: return new RCBr();
+    case WHILE: return new WhileOp();
+    case IF: return new IfOp();
+    case ELSE: return new ElseOp();
     }
-    while (!st.isEmpty()) {
-        stackItem = st.pop();
-        postf.push(stackItem);
-    }
-    return postf;
 }
-// --------------------------------------------------------------------------------------------
 
-Expr* PARCER::parce_tree(const TQueue<LEXEM>& que) {
-    TQueue<lexem> postf(que);
-    size_t sz = postf.get_size();
-    
-    TStack<Expr*> treeStack(sz);
-    while (!postf.isEmpty()) {
-        lexem item = postf.pop();
-        if (item.type == NUM || item.type == ZERO) {
-            treeStack.push(init_fpnumber(item.value));
+bool PARCER::reduce(TStack<Node*>* stack, TQueue<Terminal*>* queue) {
+    int64_t res = 1;
+    TStack<Node*> currSt(7);
+    while (!stack->isEmpty()) {
+        Node* stackItem = stack->top();
+        res *= stackItem->getCode();
+        switch (res) {
+        case 2: {
+            if (queue->top()->getCode() == 19) {
+                currSt.push(stackItem);
+                stack->pop();
+                break;
+            }
+            Variable* term = static_cast<Variable*>(stackItem);
+            stack->push(new Mon(term));
+            return true;
+        } // я запутался
+        case 3: {
+            if (queue->top()->getCode() == 19) {
+                currSt.push(stackItem);
+                stack->pop();
+                break;
+            }
+            FPNumber* term = static_cast<FPNumber*>(stackItem);
+            stack->push(new Mon(term));
+            return true;
         }
-        else if (item.type == VAR) {
-            treeStack.push(init_variable(item.value));
+        case 2014: {
+            Mon* left = static_cast<Mon*>(stackItem);
+            MuDv* op = static_cast<MuDv*>(currSt.pop());
+            Variable* right = static_cast<Variable*>(currSt.pop());
+            stack->push(new Mon(left, op->getType(), right));
+            return true;
+        } 
+        case 3021: {
+            Mon* left = static_cast<Mon*>(stackItem);
+            MuDv* op = static_cast<MuDv*>(currSt.pop());
+            FPNumber* right = static_cast<FPNumber*>(currSt.pop());
+            stack->push(new Mon(left, op->getType(), right));
+            return true;
+        } 
+        case 53: {
+            Mon* mon = static_cast<Mon*>(stackItem);
+            stack->push(new Pol(mon));
+            return true;
         }
-        else {
-            Expr* r = treeStack.pop();
-            Expr* l = treeStack.pop();
-            Expr* newNode = init_bioperation(item.value, l, r);
-            treeStack.push(newNode);
+        case 53159: {
+            Pol* left = static_cast<Pol*>(stackItem);
+            AdSb* op = static_cast<AdSb*>(currSt.pop());
+            Mon* right = static_cast<Mon*>(currSt.pop());
+            stack->push(new Pol(left, op->getType(), right));
+            return true;
+        }
+        case 0b000000000000000000000: {
+
+        }
+        case 0b000000000000000000000: {
+
+        }
+        default: 
+            currSt.push(stackItem);
+            stack->pop();
         }
     }
-    return treeStack.pop();
+    while (!currSt.isEmpty())
+        stack->push(currSt.pop());
+    return false;
+}
+
+bool PARCER::shift(TStack<Node*>* stack, TQueue<Terminal*>* queue) {
+
+}
+
+PMM_EXPR::ExprTree* PARCER::bottomup_parce_tree(const TQueue<LEXEM>& in_que) {
+    TQueue<lexem> inf = in_que;
+    TQueue<Terminal*> queue;
+    while (!inf.isEmpty()) {
+        queue.push(init_terminal_node(inf.pop()));
+    }
+    TStack<Node*> stack(inf.get_size());
+    while (!queue.isEmpty()) {
+        if (!reduce(&stack, &queue)) {
+            if (!shift(&stack, &queue)) {
+                ExprTree* res = dynamic_cast<ExprTree*>(stack.pop());
+                if (!res) throw "PARSING ERROR";
+                else return res;
+            }
+        }
+    }
 }
 
 

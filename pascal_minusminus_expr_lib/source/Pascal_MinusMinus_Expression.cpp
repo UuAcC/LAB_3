@@ -1,6 +1,6 @@
 #include "Pascal_MinusMinus_Expression.h"
 #include "ExprExecExceprions.h"
-#include "ExprRecursiveVisitors.h"
+#include "ExprIterativeExecutor.h"
 
 LEX_TYPE PMM_EXPR::decode(char c) {
     switch (c) {
@@ -40,8 +40,8 @@ void PMM_EXPR::execute() {
     }
 }
 
-void PMM_EXPR::print() {
-    Expr* tree = get_tree();
-    PrintVisitor pv;
-    tree->accept(&pv);
-}
+//void PMM_EXPR::print() {
+//    Expr* tree = get_tree();
+//    PrintVisitor pv;
+//    tree->accept(&pv);
+//}

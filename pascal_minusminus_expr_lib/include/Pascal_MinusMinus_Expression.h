@@ -2,21 +2,17 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <stdint.h>
 
 #include "TStack.h"
 #include "TQueue.h"
 
-#include "ExprIterativeExecutor.h"
-
 #define PMM_EXPR Pascal_MinusMinus_Expression
 
-#define PARCER PMM_EXPR::Parcer
-
-#define LEX_TYPE PMM_EXPR::LexemType
-#define LEXEM PMM_EXPR::lexem
+#define ERROR PMM_EXPR::error
 
 #define STATE PMM_EXPR::state
-#define ERROR PMM_EXPR::error
+#define PARCER PMM_EXPR::Parcer
 
 #define CHAR_IN_LC c >= 97 && c <= 122
 #define CHAR_IN_UC c >= 65 && c <= 90
@@ -30,25 +26,33 @@
 #define CHAR_IS_OPERAND tp >= 0 && tp <= 3
 
 // from l_round_br to semicolon
-#define CHAR_IS_OPERATION tp >= 4 && tp <= 10
+#define CHAR_IS_OPERATION tp >= 4 && tp <= 11
+
+
+#define LEXEM PMM_EXPR::lexem
+#define LEX_TYPE PMM_EXPR::LexemType
 
 using namespace std;
+using std::string;
 // Function pointer type for operations
 using pmme_fp = double(*)(double, double);
+
+class Visitor;
 
 class Pascal_MinusMinus_Expression {
 public:
     // Enumeration of possible lexeme types in arithmetic expression
-    enum class LexemType {              // in tree:
+    enum class LexemType {              
         dot, 
-        zero, num,                              // fpnumber
-        variable,                               // variable
+        zero, num,
+        variable,
         l_round_br, r_round_br,
-        add_sub, mul, div, equal, semicolon,    // bioperation
+        add, sub, mul, div, equal, semicolon,
         l_curly_br, r_curly_br,
-        keyword_while,                          // operator_while
-        keyword_if,                             // operator_if
-        keyword_else,                           // operator_else
+        c_equal, c_not_equal, c_more, c_more_equal, c_less, c_less_equal,
+        keyword_while,
+        keyword_if,
+        keyword_else,
         keyword_print,                          // not yet
         not_a_lexem 
     };
@@ -61,9 +65,8 @@ public:
     };
     friend ostream& operator<<(ostream& ostr, const LEXEM& lex);
     friend ostream& operator<<(ostream& ostr, const LEX_TYPE& tp);
-private:
-    // States for finite state machine, STX - error state for throw
-    enum state { ST0, ST1, ST2, ST3, ST4, ST5, STX };
+
+
     // Structure representing an error with its position and value
     struct error {
         size_t index; string value;
@@ -71,6 +74,221 @@ private:
         error(size_t i, char c);
     };
     friend ostream& operator<<(ostream& ostr, const ERROR& er);
+
+
+    struct NodeRetVal {
+        string var_name;
+        double doub_val;
+        bool bool_value;
+
+        bool hv_name = false;
+        bool hv_dval = false;
+        bool hv_bval = false;
+
+        NodeRetVal() {}
+        NodeRetVal(string _vn) : var_name(_vn), hv_name(true) {}
+        NodeRetVal(double _dv) : doub_val(_dv), hv_dval(true) {}
+        NodeRetVal(bool _bv) : bool_value(_bv), hv_bval(true) {}
+
+        inline explicit operator string() const { return var_name; }
+        inline explicit operator double() const { return doub_val; }
+        inline explicit operator bool() const { return bool_value; }
+
+        inline void set_var_name(string _vn) { var_name = _vn; hv_name = true; }
+        inline void set_doub_val(double _dv) { doub_val = _dv; hv_dval = true; }
+        inline void set_bool_val(bool _bv) { bool_value = _bv; hv_bval = true; }
+    };
+
+
+    class Node {
+    public:
+        virtual NodeRetVal accept(Visitor* v) = 0;
+        virtual inline int getCode() const = 0;
+    };
+
+    class BiNode : public Node {
+    protected:
+        Node* left = nullptr;
+        Node* right = nullptr;
+    public:
+        BiNode(Node* l, Node* r = nullptr);
+        Node* getLeft() const;
+        Node* getRight() const;
+        virtual NodeRetVal accept(Visitor* v) = 0;
+    };
+
+    class Terminal : public Node {
+    protected:
+        lexem il;
+    public:
+        Terminal() : il(lexem()) {}
+        Terminal(lexem _l) : il(_l) {}
+        virtual NodeRetVal accept(Visitor* v) = 0;
+        virtual inline lexem getIL() const { return il; }
+    };
+
+
+    class Variable : public Terminal {
+    public:
+        Variable(lexem _n) : Terminal(_n) {}
+        virtual NodeRetVal accept(Visitor* v) override;
+        virtual inline int getCode() const override { return 2; }
+        string inline getName() const { return il.value; }
+    };
+    class FPNumber : public Terminal {
+    public:
+        FPNumber(lexem _val) : Terminal(_val) {}
+        double inline getVal() const { return std::stod(il.value); }
+        virtual NodeRetVal accept(Visitor* v) override;
+        virtual inline int getCode() const override { return 3; }
+    };
+    class LRBr : public Terminal {
+    public:
+        virtual NodeRetVal accept(Visitor* v) override { return 0.0; }
+        virtual inline int getCode() const override { return 5; }
+    };
+    class RRBr : public Terminal {
+    public:
+        virtual NodeRetVal accept(Visitor* v) override { return 0.0; }
+        virtual inline int getCode() const override { return 7; }
+    };
+    class LCBr : public Terminal {
+    public:
+        virtual NodeRetVal accept(Visitor* v) override { return 0.0; }
+        virtual inline int getCode() const override { return 11; }
+    };
+    class RCBr : public Terminal {
+    public:
+        virtual NodeRetVal accept(Visitor* v) override { return 0.0; }
+        virtual inline int getCode() const override { return 13; }
+    };
+    class AdSb : public Terminal {
+    public:
+        AdSb(lexem _tp) : Terminal(_tp) {}
+        virtual NodeRetVal accept(Visitor* v) override { return 0.0; }
+        virtual inline int getCode() const override { return 17; }
+        inline LexemType getType() const { return il.type; }
+    };
+    class MuDv : public Terminal {
+    public:
+        MuDv(lexem _tp) : Terminal(_tp) {}
+        virtual NodeRetVal accept(Visitor* v) override { return 0.0; }
+        virtual inline int getCode() const override { return 19; }
+        inline LexemType getType() const { return il.type; }
+    };
+    class Cop : public Terminal {
+    public:
+        Cop(lexem _tp) : Terminal(_tp) {}
+        virtual NodeRetVal accept(Visitor* v) override { return 0.0; }
+        virtual inline int getCode() const override { return 23; }
+        inline LexemType getType() const { return il.type; }
+    };
+    class Eq : public Terminal {
+    public:
+        virtual NodeRetVal accept(Visitor* v) override { return 0.0; }
+        virtual inline int getCode() const override { return 29; }
+    };
+    class SmCln : public Terminal {
+    public:
+        virtual NodeRetVal accept(Visitor* v) override { return 0.0; }
+        virtual inline int getCode() const override { return 31; }
+    };
+    class WhileOp : public Terminal {
+    public:
+        virtual NodeRetVal accept(Visitor* v) override { return 0.0; }
+        virtual inline int getCode() const override { return 37; }
+    };
+    class IfOp : public Terminal {
+    public:
+        virtual NodeRetVal accept(Visitor* v) override { return 0.0; }
+        virtual inline int getCode() const override { return 43; }
+    };
+    class ElseOp : public Terminal {
+    public:
+        virtual NodeRetVal accept(Visitor* v) override { return 0.0; }
+        virtual inline int getCode() const override { return 47; }
+    };
+
+    class Mon : public BiNode {
+        LexemType op;
+    public:
+        Mon(Terminal* l);
+        Mon(Mon* l, LexemType _op, Terminal* r);
+        LexemType getOp() const;
+        virtual NodeRetVal accept(Visitor* v) override;
+        virtual inline int getCode() const override { return 53; }
+    };
+
+    class Pol : public BiNode {
+        LexemType op;
+    public:
+        Pol(Mon* l);
+        Pol(Pol* l, LexemType _op, Mon* r);
+        LexemType getOp() const;
+        virtual NodeRetVal accept(Visitor* v) override;
+        virtual inline int getCode() const override { return 59; }
+    };
+
+    class Comp : public BiNode {
+        LexemType op;
+    public:
+        Comp(Pol* l, LexemType _op, Pol* r);
+        LexemType getOp() const;
+        virtual NodeRetVal accept(Visitor* v) override;
+        virtual inline int getCode() const override { return 61; }
+    };
+
+    class EqOper : public BiNode {
+    public:
+        EqOper(Variable* l, Pol* r);
+        virtual NodeRetVal accept(Visitor* v) override;
+        virtual inline int getCode() const override { return 67; }
+    };
+
+    class Operator;
+    class Expr : public BiNode {
+    public:
+        Expr(Operator* l);
+        Expr(Expr* l, Operator* r);
+        virtual NodeRetVal accept(Visitor* v) override;
+        virtual inline int getCode() const override { return 71; }
+    };
+
+    class IfOper : public BiNode {
+    public:
+        IfOper(Comp* l, Expr* r);
+        virtual NodeRetVal accept(Visitor* v) override;
+        virtual inline int getCode() const override { return 73; }
+    };
+
+    class IfElse : public BiNode {
+    public:
+        IfElse(IfOper* l, Expr* r = nullptr);
+        virtual NodeRetVal accept(Visitor* v) override;
+        virtual inline int getCode() const override { return 79; }
+    };
+
+    class Operator : public BiNode {
+    public:
+        Operator(EqOper* l);
+        Operator(Comp* l, Expr* r);
+        Operator(IfElse* l);
+        virtual NodeRetVal accept(Visitor* v) override;
+        virtual inline int getCode() const override { return 83; }
+    };
+
+    class ExprTree : public Node {
+        Node* child;
+    public:
+        ExprTree(Expr* c);
+        virtual NodeRetVal accept(Visitor* v) override;
+    };
+
+
+
+    private:
+    // States for finite state machine, STX - error state for throw
+    enum state { ST0, ST1, ST2, ST3, ST4, ST5, STX };
     // Class containing static methods for parsing string into lexeme queue
     class Parcer {
         // Name of the last executed function
@@ -78,8 +296,6 @@ private:
         // Queue of errors that occurred during the last function execution
         static TQueue<ERROR> last_errors;
 
-        // Operator priority mapping
-        static map<string, int> priority;
         static LEX_TYPE determine_lex_type(string str);
 
         // --------------------------------------------------------------------------------------------
@@ -149,6 +365,14 @@ private:
 
         // Function that handles unary operators by adding zero before them
         static void unary_handle(TQueue<LEXEM>& _infix) noexcept;
+
+        // --------------------------------------------------------------------------------------------
+        //        Functions needed to bottom-up parsing
+       
+        // 
+        static Terminal* init_terminal_node(lexem lex);
+        static bool reduce(TStack<Node*>* stack, TQueue<Terminal*>* queue);
+        static bool shift(TStack<Node*>* stack, TQueue<Terminal*>* queue);
     public:
         // Checks if errors occurred during the last function execution
         static inline bool errors_occured() { return !last_errors.isEmpty(); };
@@ -156,36 +380,22 @@ private:
         static void print_error_message();
         // Removes all spaces from the input string
         static string delete_spaces(const string& str);
-        // Parses input: string -> lexeme queue
+        // Parses input: string -> lexem queue
         static TQueue<LEXEM> parce_infix(const string& str);
-        // Converts infix notation to postfix notation using shunting yard algorithm
-        static TQueue<LEXEM> parce_postfix(const TQueue<LEXEM>& que);
-
-        static Expr* parce_tree(const TQueue<LEXEM>& que);
+        // Parses lexem queue -> ExprTree
+        static ExprTree* bottomup_parce_tree(const TQueue<LEXEM>& que);
         // Converts string representation of number to double value
         static double to_double(const string& str);
     };
 private:
     string s_infix; // String representation of infix arithmetic expression
     TQueue<lexem> q_infix; // Infix notation represented as lexeme queue
-    TQueue<lexem> q_postfix; // Postfix notation represented as lexeme queue
-    Expr* expression_tree;
+    ExprTree* expression_tree;
 public:
     Pascal_MinusMinus_Expression(string _infix);
     inline string get_s_infix() const { return s_infix; }
     inline TQueue<lexem> get_q_infix() const { return q_infix; }
-    inline const TQueue<lexem>& get_q_postfix() {
-        if (q_postfix.isEmpty())
-            q_postfix = Parcer::parce_postfix(q_infix);
-        return q_postfix;
-    }
-    inline Expr* get_tree() {
-        if (expression_tree == nullptr)
-            expression_tree = Parcer::parce_tree(get_q_postfix());
-        return expression_tree;
-    }
+    inline const ExprTree*& get_tree() const;
     // Executes the code
     void execute();
-
-    void print();
 };
