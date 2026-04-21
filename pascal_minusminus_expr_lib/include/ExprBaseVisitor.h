@@ -12,7 +12,7 @@ public:
 	virtual NRV visitPol(PMM_EXPR::Pol* pol) = 0;
 	virtual NRV visitComp(PMM_EXPR::Comp* comp) = 0;
 
-	virtual NRV visitEqu(PMM_EXPR::EqOper* num) = 0;
+	virtual NRV visitEqOper(PMM_EXPR::EqOper* num) = 0;
 
 	virtual NRV visitIfOper(PMM_EXPR::IfOper* num) = 0;
 	virtual NRV visitIfElse(PMM_EXPR::IfElse* num) = 0;

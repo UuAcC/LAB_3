@@ -24,10 +24,10 @@
 #define CHAR_IN_INTS_ND tp >= 1 && tp <= 2
 // from dot to var 
 #define CHAR_IS_OPERAND tp >= 0 && tp <= 3
-
 // from l_round_br to semicolon
-#define CHAR_IS_OPERATION tp >= 4 && tp <= 11
-
+#define CHAR_IS_OPERATION tp >= 4 && tp <= 12
+// from equal to c_less_equal
+#define CHAR_IS_COMP_OPER tp >= 13 && tp <= 19
 
 #define LEXEM PMM_EXPR::lexem
 #define LEX_TYPE PMM_EXPR::LexemType
@@ -46,10 +46,9 @@ public:
         dot, 
         zero, num,
         variable,
-        l_round_br, r_round_br,
-        add, sub, mul, div, equal, semicolon,
-        l_curly_br, r_curly_br,
-        c_equal, c_not_equal, c_more, c_more_equal, c_less, c_less_equal,
+        l_round_br, r_round_br, l_curly_br, r_curly_br,
+        add, sub, mul, div, semicolon,
+        equal, c_equal, c_not_equal, c_more, c_more_equal, c_less, c_less_equal,
         keyword_while,
         keyword_if,
         keyword_else,
@@ -130,7 +129,7 @@ public:
     Pascal_MinusMinus_Expression(string _infix);
     inline string get_s_infix() const { return s_infix; }
     inline TQueue<lexem> get_q_infix() const { return q_infix; }
-    inline ExprTree* get_tree() const;
+    inline ExprTree* get_tree();
     // Executes the code
     void execute();
 };

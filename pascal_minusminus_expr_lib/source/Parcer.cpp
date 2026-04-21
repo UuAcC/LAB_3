@@ -39,19 +39,56 @@ inline void PARCER::pi_f2(char c) {
     pi_s_buffer.clear();
 }
 inline void PARCER::pi_f3(char c) { pi_s_buffer += c; }
+inline void PARCER::pi_f4(char c) {
+    pi_v_buffer.push_back(lexem(pi_s_buffer, decode(pi_s_buffer[0])));
+    pi_v_buffer.push_back(lexem(string(1, c), decode(c)));
+    pi_s_buffer.clear();
+}
+inline void PARCER::pi_f5(char c) {
+    pi_v_buffer.push_back(lexem(pi_s_buffer, decode(pi_s_buffer[0])));
+    pi_s_buffer = string(1, c);
+}
+inline void PARCER::pi_f6(char c) {
+    pi_s_buffer += c;
+    pi_v_buffer.push_back(lexem(pi_s_buffer, determine_lex_type(pi_s_buffer)));
+    pi_s_buffer.clear();
+}
+inline void PARCER::pi_f7(char c) {
+    pi_v_buffer.push_back(lexem(pi_s_buffer, determine_lex_type(pi_s_buffer)));
+    pi_s_buffer = string(1, c);
+}
 
 LEX_TYPE PARCER::determine_lex_type(string str) {
     if (str == "0") return ZERO;
     else if (str == "while") return WHILE;
-    for (char c : str) {
-        if (CHAR_IN_LETTERS) return VAR;
-    } return NUM;
+    else if (str == "if") return IF;
+    else if (str == "else") return ELSE;
+    else if (str == "==") return C_EQ;
+    else {
+        if (str[0] == '<') {
+            switch (str[1]) {
+            case '=': return C_LE;
+            case '>': return C_NEQ;
+            default: throw str[1];
+            }
+        }
+        else if (str[0] == '>') {
+            if (str[0] == '=') return C_ME;
+            else throw str[1];
+        }
+        else {
+            for (char c : str) {
+                if (CHAR_IN_LETTERS) return VAR;
+            } return NUM;
+        }
+    }
 }
 
 STATE PARCER::pi_next(char c) {
     int tp = (int)decode(c);
     if (CHAR_IS_OPERATION) { return ST0; }
     if (CHAR_IS_OPERAND) { return ST1; }
+    if (CHAR_IS_COMP_OPER) { return ST2; }
     else throw c;
 }
 
@@ -60,11 +97,19 @@ parcer_fp PARCER::pi_call(state st, char c) {
     if (st == ST0) {
         if (CHAR_IS_OPERATION) { return pi_f0; }
         if (CHAR_IS_OPERAND) { return pi_f1; }
+        if (CHAR_IS_COMP_OPER) { return pi_f1; }
         else throw c;
     }
     else if (st == ST1) {
         if (CHAR_IS_OPERATION) { return pi_f2; }
         if (CHAR_IS_OPERAND) { return pi_f3; }
+        if (CHAR_IS_COMP_OPER) { return pi_f7; }
+        else throw c;
+    }
+    else {
+        if (CHAR_IS_OPERATION) { return pi_f4; }
+        if (CHAR_IS_OPERAND) { return pi_f5; }
+        if (CHAR_IS_COMP_OPER) { return pi_f6; }
         else throw c;
     }
 }
@@ -386,5 +431,7 @@ PMM_EXPR::ExprTree* PARCER::bottomup_parce_tree(const TQueue<LEXEM>& in_que) {
         }
     }
 }
+
+// мне хочется плакать
 
 
