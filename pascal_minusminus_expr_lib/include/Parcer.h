@@ -102,7 +102,7 @@ class PMM_EXPR::Parcer {
     // converts lexem into Terminal*
     static Terminal* init_terminal_node(lexem lex);
     // is used to dynamic cast 
-    template<class Type> static Type* cast(Node* nod);
+    template<class Type> static Type* cast(Node* nod, string message);
 
     static bool reduce(TStack<Node*>* stack, TQueue<Terminal*>* queue);
     static bool shift(TStack<Node*>* stack, TQueue<Terminal*>* queue);
@@ -124,9 +124,9 @@ public:
 };
 
 template<class Type>
-inline Type* PARCER::cast(Node* nod) {
+inline Type* PARCER::cast(Node* nod, string message) {
     Type* res = dynamic_cast<Type*>(nod);
-    if (res == nullptr) throw "BOTTOM-UP TREE PARSING ERROR";
+    if (res == nullptr) throw runtime_error(message);
     // здесь можно сделать виртуальный метод, возвращающий название или че-то такое
     else return res;
 }

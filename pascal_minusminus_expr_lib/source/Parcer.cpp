@@ -237,6 +237,9 @@ void PARCER::unary_handle(TQueue<LEXEM>& _infix) noexcept {
 
 PMM_EXPR::Terminal* PARCER::init_terminal_node(lexem lex) {
     switch (lex.type) {
+    case ZERO:
+    case NUM: return new FPNumber(lex);
+        case VAR: return new Variable(lex);
     case ADD:
     case SUB: return new AdSb(lex);
     case MUL:
@@ -267,7 +270,8 @@ bool PARCER::reduce(TStack<Node*>* stack, TQueue<Terminal*>* queue) {
         res *= stackItem->getCode();
         switch (res) {
         case 2: { 
-            if (!stack->isEmpty() && stack->top()->getCode() == 19) {
+            if (!stack->isEmpty() && stack->top()->getCode() == 19
+                || (!queue->isEmpty() && queue->top()->getCode() == 29)) {
                 stackOfStashed.push(stackItem); break;
             }
             Variable* term = static_cast<Variable*>(stackItem);
@@ -283,19 +287,37 @@ bool PARCER::reduce(TStack<Node*>* stack, TQueue<Terminal*>* queue) {
             return true;
         }
         case 2014: { 
-            Mon* left = cast<Mon>(stackItem);
-            MuDv* op = cast<MuDv>(stackOfStashed.pop());
-            Variable* right = cast<Variable>(stackOfStashed.pop());
+            Mon* left = cast<Mon>(stackItem, "Incorrect lexemes order: tried to cast Mon");
+            MuDv* op = cast<MuDv>(stackOfStashed.pop(), "Incorrect lexemes order: tried to cast Mul/Div");
+            Variable* right = cast<Variable>(stackOfStashed.pop(), "Incorrect lexemes order: tried to cast Variable");
             stack->push(new Mon(left, op->getType(), right));
             return true;
         } 
         case 3021: {
-            Mon* left = cast<Mon>(stackItem);
-            MuDv* op = cast<MuDv>(stackOfStashed.pop());
-            FPNumber* right = cast<FPNumber>(stackOfStashed.pop());
+            Mon* left = cast<Mon>(stackItem, "Incorrect lexemes order: tried to cast Mon");
+            MuDv* op = cast<MuDv>(stackOfStashed.pop(), "Incorrect lexemes order: tried to cast Mul/Div");
+            FPNumber* right = cast<FPNumber>(stackOfStashed.pop(), "Incorrect lexemes order: tried to cast FPNumber");
             stack->push(new Mon(left, op->getType(), right));
             return true;
         } 
+        case 1855: {
+            Mon* mon = cast<Mon>(stackOfStashed.pop(), "Incorrect lexemes order: tried to cast Mon");
+            Node* right = mon->getRight();
+            if (right != nullptr) {
+                Variable* rght = dynamic_cast<Variable*>(right);
+                if (rght == nullptr)
+                    stack->push(new Mon(static_cast<Mon*>(mon->getLeft()), mon->getOp(), static_cast<FPNumber*>(right)));
+                else stack->push(new Mon(static_cast<Mon*>(mon->getLeft()), mon->getOp(), rght));
+            }
+            else {
+                Node* left = mon->getLeft();
+                Variable* lft = dynamic_cast<Variable*>(left);
+                if (lft == nullptr)
+                    stack->push(new Mon(static_cast<FPNumber*>(left)));
+                else stack->push(new Mon(lft));
+            }
+            return true;
+        }
         case 53: {
             if ((!stack->isEmpty() && stack->top()->getCode() == 17) 
                 || (!queue->isEmpty() && queue->top()->getCode() == 19))
@@ -310,32 +332,54 @@ bool PARCER::reduce(TStack<Node*>* stack, TQueue<Terminal*>* queue) {
             if (!queue->isEmpty() && queue->top()->getCode() == 19) { 
                 stackOfStashed.push(stackItem); break; 
             }
-            Pol* left = cast<Pol>(stackItem);
-            AdSb* op = cast<AdSb>(stackOfStashed.pop());
-            Mon* right = cast<Mon>(stackOfStashed.pop());
+            Pol* left = cast<Pol>(stackItem, "Incorrect lexemes order: tried to cast Pol");
+            AdSb* op = cast<AdSb>(stackOfStashed.pop(), "Incorrect lexemes order: tried to cast Add/Sub");
+            Mon* right = cast<Mon>(stackOfStashed.pop(), "Incorrect lexemes order: tried to cast Mon");
             stack->push(new Pol(left, op->getType(), right));
             return true;
         }
+        case 2065: {
+            Pol* pol = cast<Pol>(stackOfStashed.pop(), "Incorrect lexemes order: tried to cast Pol");
+            Mon* right = static_cast<Mon*>(pol->getRight());
+            if (right != nullptr)
+                stack->push(new Pol(static_cast<Pol*>(pol->getLeft()), pol->getOp(), right));
+            else stack->push(new Pol(static_cast<Mon*>(pol->getLeft())));
+            return true;
+        }
         case 80063: {
-            Pol* left = cast<Pol>(stackItem);
-            Cop* op = cast<Cop>(stackOfStashed.pop());
-            Pol* right = cast<Pol>(stackOfStashed.pop());
+            if (!queue->isEmpty() && queue->top()->getCode() == 17) {
+                stackOfStashed.push(stackItem); break;
+            }
+            Pol* left = cast<Pol>(stackItem, "Incorrect lexemes order: tried to cast Pol");
+            Cop* op = cast<Cop>(stackOfStashed.pop(), "Incorrect lexemes order: tried to cast compare operation");
+            Pol* right = cast<Pol>(stackOfStashed.pop(), "Incorrect lexemes order: tried to cast Pol");
             stack->push(new Comp(left, op->getType(), right));
             return true;
         }
+        case 2135: {
+            if (!queue->isEmpty() && queue->top()->getCode() == 11) {
+                stackOfStashed.push(stackItem); break;
+            }
+            Comp* cmp = cast<Comp>(stackOfStashed.pop(), "Incorrect lexemes order: tried to cast Comp");
+            stack->push(new Comp(static_cast<Pol*>(cmp->getLeft()), cmp->getOp(), static_cast<Pol*>(cmp->getRight())));
+            return true;
+        }
         case 3422: {
-            Variable* left = cast<Variable>(stackItem);
+            if (!queue->isEmpty() && queue->top()->getCode() == 17) {
+                stackOfStashed.push(stackItem); break;
+            }
+            Variable* left = cast<Variable>(stackItem, "Incorrect lexemes order: tried to cast Variable");
             stackOfStashed.pop();
-            Pol* right = cast<Pol>(stackOfStashed.pop());
+            Pol* right = cast<Pol>(stackOfStashed.pop(), "Incorrect lexemes order: tried to cast Pol)");
             stack->push(new EqOper(left, right));
             return true;
         }
         case 932096165: {
             stackOfStashed.pop(); 
-            Comp* cond = cast<Comp>(stackOfStashed.pop());
+            Comp* cond = cast<Comp>(stackOfStashed.pop(), "Incorrect lexemes order: tried to cast Comp");
             stackOfStashed.pop();
             stackOfStashed.pop();
-            Expr* expr = cast<Expr>(stackOfStashed.pop());
+            Expr* expr = cast<Expr>(stackOfStashed.pop(), "Incorrect lexemes order: tried to cast Expr");
             stack->push(new IfOper(cond, expr));
             return true;
         }
@@ -348,19 +392,19 @@ bool PARCER::reduce(TStack<Node*>* stack, TQueue<Terminal*>* queue) {
             return true;
         }
         case 34834943: {
-            IfOper* iop = cast<IfOper>(stackItem);
+            IfOper* iop = cast<IfOper>(stackItem, "Incorrect lexemes order: tried to cast IfOper");
             stackOfStashed.pop();
             stackOfStashed.pop();
-            Expr* expr = cast<Expr>(stackOfStashed.pop());
+            Expr* expr = cast<Expr>(stackOfStashed.pop(), "Incorrect lexemes order: tried to cast Expr");
             stack->push(new IfElse(iop, expr));
             return true;
         }
         case 888742855: {
             stackOfStashed.pop();
-            Comp* cond = cast<Comp>(stackOfStashed.pop());
+            Comp* cond = cast<Comp>(stackOfStashed.pop(), "Incorrect lexemes order: tried to cast Comp");
             stackOfStashed.pop();
             stackOfStashed.pop();
-            Expr* expr = cast<Expr>(stackOfStashed.pop());
+            Expr* expr = cast<Expr>(stackOfStashed.pop(), "Incorrect lexemes order: tried to cast Expr");
             stack->push(new WhileOper(cond, expr));
             return true;
         }
@@ -388,14 +432,16 @@ bool PARCER::reduce(TStack<Node*>* stack, TQueue<Terminal*>* queue) {
             return true;
         }
         case 182683: {
-            Expr* expr = cast<Expr>(stackItem);
+            Expr* expr = cast<Expr>(stackItem, "Incorrect lexemes order: tried to cast Expr");
             stackOfStashed.pop();
-            Operator* op = cast<Operator>(stackOfStashed.pop());
+            Operator* op = cast<Operator>(stackOfStashed.pop(), "Incorrect lexemes order: tried to cast Operator");
             stack->push(new Expr(expr, op));
             return true;
         }
         case 71: {
-            if (!queue->isEmpty()) { stackOfStashed.push(stackItem); break; } 
+            if (!queue->isEmpty()) { 
+                stackOfStashed.push(stackItem); break; 
+            } 
             Expr* expr = static_cast<Expr*>(stackItem);
             stack->push(new ExprTree(expr));
             return true;
@@ -416,16 +462,29 @@ bool PARCER::shift(TStack<Node*>* stack, TQueue<Terminal*>* queue) {
 
 PMM_EXPR::ExprTree* PARCER::bottomup_parce_tree(const TQueue<LEXEM>& in_que) {
     TQueue<lexem> inf = in_que;
-    TQueue<Terminal*> queue;
+    TQueue<Terminal*> queue(in_que.get_size());
     while (!inf.isEmpty()) {
         queue.push(init_terminal_node(inf.pop()));
     }
     TStack<Node*> stack(inf.get_size());
-    while (!queue.isEmpty()) {
+    bool shift_result = true;
+    while (!queue.isEmpty() || shift_result) {
         if (!reduce(&stack, &queue)) {
-            if (!shift(&stack, &queue)) {
+            shift_result = shift(&stack, &queue);
+            if (!shift_result) {
                 ExprTree* res = dynamic_cast<ExprTree*>(stack.pop());
-                if (!res) throw "BOTTOM-UP TREE PARSING ERROR";
+                if (!res) {
+                    TStack<Node*> debugs = stack;
+                    cout << "stack: ";
+                    while (!debugs.isEmpty())
+                        cout << debugs.pop()->getCode() << " ";
+                    TQueue<Terminal*> debugq = queue;
+                    cout << "\nqueue: ";
+                    while (!debugq.isEmpty())
+                        cout << debugq.pop()->getCode() << " ";
+                    cout << endl;
+                    throw runtime_error("BOTTOM-UP TREE PARSING ERROR");
+                }
                 else return res;
             }
         }

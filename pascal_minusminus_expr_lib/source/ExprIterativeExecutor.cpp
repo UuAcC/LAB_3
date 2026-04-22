@@ -4,15 +4,13 @@
 
 #define NODE PMM_EXPR::Node
 
-#define FPNUMBER PMM_EXPR::FPNumber
-NRV IterativeExecutor::visitFPNumber(FPNUMBER* num) {
+NRV IterativeExecutor::visitFPNumber(PMM_EXPR::FPNumber* num) {
 	if (!last_status) { exstack.push(ExecNode(num, 1)); }
 	else { exvalues.push(NRV(num->getVal())); }
 	return true;
 }
 
-#define VARIABLE PMM_EXPR::Variable
-NRV IterativeExecutor::visitVariable(VARIABLE* var) {
+NRV IterativeExecutor::visitVariable(PMM_EXPR::Variable* var) {
 	if (!last_status) { exstack.push(ExecNode(var, 1)); }
 	else {
 		string name = var->getName();
@@ -24,9 +22,8 @@ NRV IterativeExecutor::visitVariable(VARIABLE* var) {
 	return true;
 }
 
-#define MON PMM_EXPR::Mon
-NRV IterativeExecutor::visitMon(MON* mon) {
-	if (!last_status) { 
+NRV IterativeExecutor::visitMon(PMM_EXPR::Mon* mon) {
+	if (!last_status) {
 		exstack.push(ExecNode(mon, 1)); 
 		NODE* right = mon->getRight();
 		if (right != nullptr) { exstack.push(ExecNode(right, 0)); }
@@ -34,22 +31,23 @@ NRV IterativeExecutor::visitMon(MON* mon) {
 	}
 	else {
 		if (!table_inited) { var_table = ExprVarTable(); table_inited = true; }
-		NRV right = exvalues.top(); exvalues.pop();
-		NRV left = exvalues.top(); exvalues.pop();
-		if (!right.hv_dval) 
-			throw new EEE_invalid_argument("variable \"" + (string)right + "\" is not initialized.\n");
-		double dr = (double)right;
-		double dl = (double)left;
-		NRV result;
-		if (mon->getOp() == MUL) result.set_doub_val(dl * dr);
-		else result.set_doub_val(dl / dr);
-		exvalues.push(result);
+		if (mon->getRight() != nullptr) {
+			NRV right = exvalues.top(); exvalues.pop();
+			NRV left = exvalues.top(); exvalues.pop();
+			if (!right.hv_dval)
+				throw new EEE_invalid_argument("variable \"" + (string)right + "\" is not initialized.\n");
+			double dr = (double)right;
+			double dl = (double)left;
+			NRV result;
+			if (mon->getOp() == MUL) result.set_doub_val(dl * dr);
+			else result.set_doub_val(dl / dr);
+			exvalues.push(result);
+		}
 	}
 	return true;
 }
 
-#define POL PMM_EXPR::Pol
-NRV IterativeExecutor::visitPol(POL* pol) {
+NRV IterativeExecutor::visitPol(PMM_EXPR::Pol* pol) {
 	if (!last_status) {
 		exstack.push(ExecNode(pol, 1));
 		NODE* right = pol->getRight();
@@ -58,22 +56,23 @@ NRV IterativeExecutor::visitPol(POL* pol) {
 	}
 	else {
 		if (!table_inited) { var_table = ExprVarTable(); table_inited = true; }
-		NRV right = exvalues.top(); exvalues.pop();
-		NRV left = exvalues.top(); exvalues.pop();
-		if (!right.hv_dval)
-			throw new EEE_invalid_argument("variable \"" + (string)right + "\" is not initialized.\n");
-		double dr = (double)right;
-		double dl = (double)left;
-		NRV result;
-		if (pol->getOp() == ADD) result.set_doub_val(dl + dr);
-		else result.set_doub_val(dl - dr);
-		exvalues.push(result);
+		if (pol->getRight() != nullptr) {
+			NRV right = exvalues.top(); exvalues.pop();
+			NRV left = exvalues.top(); exvalues.pop();
+			if (!right.hv_dval)
+				throw new EEE_invalid_argument("variable \"" + (string)right + "\" is not initialized.\n");
+			double dr = (double)right;
+			double dl = (double)left;
+			NRV result;
+			if (pol->getOp() == ADD) result.set_doub_val(dl + dr);
+			else result.set_doub_val(dl - dr);
+			exvalues.push(result);
+		}
 	}
 	return true;
 }
 
-#define COMP PMM_EXPR::Comp
-NRV IterativeExecutor::visitComp(COMP* comp) {
+NRV IterativeExecutor::visitComp(PMM_EXPR::Comp* comp) {
 	if (!last_status) {
 		exstack.push(ExecNode(comp, 1));
 		exstack.push(ExecNode(comp->getRight(), 0));
@@ -98,18 +97,18 @@ NRV IterativeExecutor::visitComp(COMP* comp) {
 	return true;
 }
 
-#define EQOPER PMM_EXPR::EqOper
-NRV IterativeExecutor::visitEqOper(EQOPER* eqop) {
+NRV IterativeExecutor::visitEqOper(PMM_EXPR::EqOper* eqop) {
 	if (!last_status) {
 		exstack.push(ExecNode(eqop, 1));
-		NODE* right = eqop->getRight();
-		if (right != nullptr) { exstack.push(ExecNode(right, 0)); }
+		exstack.push(ExecNode(eqop->getRight(), 0));
 		exstack.push(ExecNode(eqop->getLeft(), 0));
 	}
 	else {
 		if (!table_inited) { var_table = ExprVarTable(); table_inited = true; }
 		NRV right = exvalues.top(); exvalues.pop();
 		NRV left = exvalues.top(); exvalues.pop();
+		if (!right.hv_dval)
+			throw new EEE_invalid_argument("variable \"" + (string)right + "\" is not initialized.\n");
 		double dr = (double)right;
 		string ls = (string)left;
 		NRV result;
@@ -121,6 +120,72 @@ NRV IterativeExecutor::visitEqOper(EQOPER* eqop) {
 	return true;
 }
 
+NRV IterativeExecutor::visitIfOper(PMM_EXPR::IfOper* ifop) {
+	if (!last_status) {
+		exstack.push(ExecNode(ifop, 1));
+		exstack.push(ExecNode(ifop->getLeft(), 0));
+	}
+	else {
+		bool comp_res = (bool)exvalues.top(); exvalues.pop();
+		if (comp_res) {
+			exstack.push(ExecNode(ifop->getRight(), 0));
+			exvalues.push(true);
+		}
+		else { exvalues.push(false); }
+	}
+	return true;
+}
+
+NRV IterativeExecutor::visitIfElse(PMM_EXPR::IfElse* ifel) {
+	if (!last_status) {
+		exstack.push(ExecNode(ifel, 1));
+		exstack.push(ExecNode(ifel->getLeft(), 0));
+	}
+	else {
+		bool ifoper_res = (bool)exvalues.top(); exvalues.pop();
+		NODE* right = ifel->getRight();
+		if (right != nullptr) {
+			if (!ifoper_res) {
+				exstack.push(ExecNode(right, 0));
+			}
+		}
+	}
+	return true;
+}
+
+NRV IterativeExecutor::visitWhileOper(PMM_EXPR::WhileOper* whop) {
+	if (!last_status) {
+		exstack.push(ExecNode(whop, 1));
+		exstack.push(ExecNode(whop->getLeft(), 0));
+	}
+	else {
+		bool comp_res = (bool)exvalues.top(); exvalues.pop();
+		if (comp_res) {
+			exstack.push(ExecNode(whop, 1));
+			exstack.push(ExecNode(whop->getLeft(), 0));
+			exstack.push(ExecNode(whop->getRight(), 0));
+		}
+	}
+	return true;
+}
+
+NRV IterativeExecutor::visitOperator(PMM_EXPR::Operator* op) {
+	exstack.push(ExecNode(op->getChild(), 0));
+	return true;
+}
+
+NRV IterativeExecutor::visitExpr(PMM_EXPR::Expr* ex) {
+	NODE* right = ex->getRight();
+	if (right != nullptr)
+		exstack.push(ExecNode(right, 0));
+	exstack.push(ExecNode(ex->getLeft(), 0));
+	return true;
+}
+
+NRV IterativeExecutor::visitTree(PMM_EXPR::ExprTree* extree) {
+	exstack.push(ExecNode(extree->getChild(), 0));
+	return true;
+}
 
 void IterativeExecutor::run(PMM_EXPR::ExprTree* tree) {
 	exstack.push(ExecNode(tree, 0));

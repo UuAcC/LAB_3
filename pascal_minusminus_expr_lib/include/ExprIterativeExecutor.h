@@ -7,8 +7,8 @@ using namespace std;
 
 struct ExecNode {
 	PMM_EXPR::Node* nod;
-	int status;
-	ExecNode(PMM_EXPR::Node* n, int st) : nod(n), status(st) {}
+	bool status;
+	ExecNode(PMM_EXPR::Node* n, bool st) : nod(n), status(st) {}
 };
 
 class IterativeExecutor : public Visitor {

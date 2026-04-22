@@ -42,7 +42,7 @@ PMM_EXPR::NodeRetVal PMM_EXPR::Comp::accept(Visitor* v) {
 
 PMM_EXPR::EqOper::EqOper(Variable* l, Pol* r) : BiNode(l, r) {}
 PMM_EXPR::NodeRetVal PMM_EXPR::EqOper::accept(Visitor* v) {
-    return v->visitEqu(this);
+    return v->visitEqOper(this);
 }
 
 PMM_EXPR::Expr::Expr(Operator* l) : BiNode(l) {}

@@ -45,21 +45,25 @@ public:
 };
 class PMM_EXPR::LRBr : public Terminal {
 public:
+    LRBr() : Terminal() {}
     virtual NodeRetVal accept(Visitor* v) override { return 0.0; }
     virtual inline int getCode() const override { return 5; }
 };
 class PMM_EXPR::RRBr : public Terminal {
 public:
+    RRBr() : Terminal() {}
     virtual NodeRetVal accept(Visitor* v) override { return 0.0; }
     virtual inline int getCode() const override { return 7; }
 };
 class PMM_EXPR::LCBr : public Terminal {
 public:
+    LCBr() : Terminal() {}
     virtual NodeRetVal accept(Visitor* v) override { return 0.0; }
     virtual inline int getCode() const override { return 11; }
 };
 class PMM_EXPR::RCBr : public Terminal {
 public:
+    RCBr() : Terminal() {}
     virtual NodeRetVal accept(Visitor* v) override { return 0.0; }
     virtual inline int getCode() const override { return 13; }
 };
@@ -86,26 +90,31 @@ public:
 };
 class PMM_EXPR::Eq : public Terminal {
 public:
+    Eq() : Terminal() {}
     virtual NodeRetVal accept(Visitor* v) override { return 0.0; }
     virtual inline int getCode() const override { return 29; }
 };
 class PMM_EXPR::SmCln : public Terminal {
 public:
+    SmCln() : Terminal() {}
     virtual NodeRetVal accept(Visitor* v) override { return 0.0; }
     virtual inline int getCode() const override { return 31; }
 };
 class PMM_EXPR::WhileOp : public Terminal {
 public:
+    WhileOp() : Terminal() {}
     virtual NodeRetVal accept(Visitor* v) override { return 0.0; }
     virtual inline int getCode() const override { return 37; }
 };
 class PMM_EXPR::IfOp : public Terminal {
 public:
+    IfOp() : Terminal() {}
     virtual NodeRetVal accept(Visitor* v) override { return 0.0; }
     virtual inline int getCode() const override { return 43; }
 };
 class PMM_EXPR::ElseOp : public Terminal {
 public:
+    ElseOp() : Terminal() {}
     virtual NodeRetVal accept(Visitor* v) override { return 0.0; }
     virtual inline int getCode() const override { return 47; }
 };
@@ -183,6 +192,7 @@ public:
     Operator(IfElse* c);
     virtual NodeRetVal accept(Visitor* v) override;
     virtual inline int getCode() const override { return 83; }
+    inline Node* getChild() const { return child; }
 };
 
 class PMM_EXPR::ExprTree : public Node {
@@ -191,4 +201,5 @@ public:
     ExprTree(Expr* c);
     virtual NodeRetVal accept(Visitor* v) override;
     virtual inline int getCode() const override { return 97; }
+    inline Node* getChild() const { return child; }
 };
