@@ -270,8 +270,7 @@ bool PARCER::reduce(TStack<Node*>* stack, TQueue<Terminal*>* queue) {
         res *= stackItem->getCode();
         switch (res) {
         case 2: { 
-            if (!stack->isEmpty() && stack->top()->getCode() == 19
-                || (!queue->isEmpty() && queue->top()->getCode() == 29)) {
+            if (!queue->isEmpty() && queue->top()->getCode() == 29) {
                 stackOfStashed.push(stackItem); break;
             }
             Variable* term = static_cast<Variable*>(stackItem);
@@ -279,35 +278,23 @@ bool PARCER::reduce(TStack<Node*>* stack, TQueue<Terminal*>* queue) {
             return true;
         } 
         case 3: { 
-            if (!stack->isEmpty() && stack->top()->getCode() == 19) { 
-                stackOfStashed.push(stackItem); break;
-            }
             FPNumber* term = static_cast<FPNumber*>(stackItem);
             stack->push(new Mon(term));
             return true;
         }
-        case 2014: { 
+        case 53371: {
             Mon* left = cast<Mon>(stackItem, "Mon");
             MuDv* op = cast<MuDv>(stackOfStashed.pop(), "Mul/Div");
-            Variable* right = cast<Variable>(stackOfStashed.pop(), "Variable");
+            Mon* right = cast<Mon>(stackOfStashed.pop(), "Mon");
             stack->push(new Mon(left, op->getType(), right));
             return true;
-        } 
-        case 3021: {
-            Mon* left = cast<Mon>(stackItem, "Mon");
-            MuDv* op = cast<MuDv>(stackOfStashed.pop(), "Mul/Div");
-            FPNumber* right = cast<FPNumber>(stackOfStashed.pop(), "FPNumber");
-            stack->push(new Mon(left, op->getType(), right));
-            return true;
-        } 
+        }
         case 1855: {
             Mon* mon = cast<Mon>(stackOfStashed.pop(), "Mon");
             Node* right = mon->getRight();
             if (right != nullptr) {
-                Variable* rght = dynamic_cast<Variable*>(right);
-                if (rght == nullptr)
-                    stack->push(new Mon(static_cast<Mon*>(mon->getLeft()), mon->getOp(), static_cast<FPNumber*>(right)));
-                else stack->push(new Mon(static_cast<Mon*>(mon->getLeft()), mon->getOp(), rght));
+                Mon* rght = static_cast<Mon*>(right);
+                stack->push(new Mon(static_cast<Mon*>(mon->getLeft()), mon->getOp(), rght));
             }
             else {
                 Node* left = mon->getLeft();
@@ -319,11 +306,15 @@ bool PARCER::reduce(TStack<Node*>* stack, TQueue<Terminal*>* queue) {
             return true;
         }
         case 53: {
-            if ((!stack->isEmpty() && stack->top()->getCode() == 17) 
-                || (!queue->isEmpty() && queue->top()->getCode() == 19))
-            {
-                stackOfStashed.push(stackItem); break;
+            if (!stack->isEmpty()) {
+                int cd = stack->top()->getCode();
+                if (cd == 17 || cd == 19) {
+                    stackOfStashed.push(stackItem); break;
+                }
             } 
+            if (!queue->isEmpty() && queue->top()->getCode() == 19) {
+                stackOfStashed.push(stackItem); break;
+            }
             Mon* mon = static_cast<Mon*>(stackItem);
             stack->push(new Pol(mon));
             return true;
@@ -338,13 +329,10 @@ bool PARCER::reduce(TStack<Node*>* stack, TQueue<Terminal*>* queue) {
             stack->push(new Pol(left, op->getType(), right));
             return true;
         }
-        case 59: {
-            stackOfStashed.push(stackItem);
-            if (!queue->isEmpty() && queue->top()->getCode() == 19) {
-                stack->push(stackOfStashed.pop()); return false;
-            } else break;
-        }
         case 2065: {
+            if (!queue->isEmpty() && queue->top()->getCode() == 19) {
+                stackOfStashed.push(stackItem); break;
+            }
             Pol* pol = cast<Pol>(stackOfStashed.pop(), "Pol");
             Mon* right = static_cast<Mon*>(pol->getRight());
             if (right != nullptr)
@@ -352,10 +340,11 @@ bool PARCER::reduce(TStack<Node*>* stack, TQueue<Terminal*>* queue) {
             else stack->push(new Pol(static_cast<Mon*>(pol->getLeft())));
             return true;
         }
-        case 66139: {
-            Pol* left = cast<Pol>(stackItem, "Pol");
+        case 2079455: {
+            Pol* left = cast<Pol>(stackOfStashed.pop(), "Pol");
+            stackOfStashed.pop();
             MuDv* op = cast<MuDv>(stackOfStashed.pop(), "Mul/Div");
-            Pol* right = cast<Pol>(stackOfStashed.pop(), "Pol");
+            Mon* right = cast<Mon>(stackOfStashed.pop(), "Mon");
             stack->push(new Pol(left, op->getType(), right));
             return true;
         }
@@ -442,6 +431,14 @@ bool PARCER::reduce(TStack<Node*>* stack, TQueue<Terminal*>* queue) {
             }
             Operator* op = static_cast<Operator*>(stackItem);
             stack->push(new Expr(op));
+            return true;
+        }
+        case 2201: {
+            if (!queue->isEmpty()) {
+                stackOfStashed.push(stackItem); break;
+            }
+            Expr* expr = cast<Expr>(stackItem, "Expr");
+            stack->push(expr);
             return true;
         }
         case 182683: {

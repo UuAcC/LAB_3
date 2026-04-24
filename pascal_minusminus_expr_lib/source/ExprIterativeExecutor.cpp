@@ -123,7 +123,7 @@ NRV IterativeExecutor::visitEqOper(PMM_EXPR::EqOper* eqop) {
 		NRV result;
 		if (var_table.contains(ls)) { var_table[ls] = dr; }
 		else { var_table.insert(ExprVarData(ls, dr)); }
-		std::cerr << ls << " = " << dr << ";\n";
+		std::cout << ls << " = " << dr << ";\n";
 		result.set_var_name(ls);
 	}
 	return true;

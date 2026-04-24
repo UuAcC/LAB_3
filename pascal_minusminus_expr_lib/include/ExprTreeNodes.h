@@ -123,7 +123,7 @@ class PMM_EXPR::Mon : public BiNode {
     LexemType op;
 public:
     Mon(Terminal* l);
-    Mon(Mon* l, LexemType _op, Terminal* r);
+    Mon(Mon* l, LexemType _op, Mon* r);
     LexemType getOp() const;
     virtual NodeRetVal accept(Visitor* v) override;
     virtual inline int getCode() const override { return 53; }
@@ -134,7 +134,6 @@ class PMM_EXPR::Pol : public BiNode {
 public:
     Pol(Mon* l);
     Pol(Pol* l, LexemType _op, Mon* r);
-    Pol(Pol* l, LexemType _op, Pol* r);
     LexemType getOp() const;
     virtual NodeRetVal accept(Visitor* v) override;
     virtual inline int getCode() const override { return 59; }

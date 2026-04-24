@@ -15,7 +15,7 @@ PMM_EXPR::NodeRetVal PMM_EXPR::FPNumber::accept(Visitor* v) {
 }
 
 PMM_EXPR::Mon::Mon(Terminal* l) : BiNode(l) {}
-PMM_EXPR::Mon::Mon(Mon* l, LexemType _op, Terminal* r) : BiNode(l, r) {
+PMM_EXPR::Mon::Mon(Mon* l, LexemType _op, Mon* r) : BiNode(l, r) {
     op = _op;
 }
 LEX_TYPE PMM_EXPR::Mon::getOp() const { return op; }
@@ -25,9 +25,6 @@ PMM_EXPR::NodeRetVal PMM_EXPR::Mon::accept(Visitor* v) {
 
 PMM_EXPR::Pol::Pol(Mon* l) : BiNode(l) {}
 PMM_EXPR::Pol::Pol(Pol* l, LexemType _op, Mon* r) : BiNode(l, r) {
-    op = _op;
-}
-PMM_EXPR::Pol::Pol(Pol* l, LexemType _op, Pol* r) : BiNode(l, r) {
     op = _op;
 }
 LEX_TYPE PMM_EXPR::Pol::getOp() const { return op; }

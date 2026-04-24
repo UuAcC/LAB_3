@@ -175,7 +175,6 @@ TEST_F(TTreeTest, BalanceInsertAndRemoveChain) {
 
     tree.outsert(90);
     tree.outsert(50);
-    std::cout << tree << std::endl;
     EXPECT_EQ(tree.min(), 20);
     EXPECT_EQ(tree.max(), 140);
     EXPECT_TRUE(tree.contains(68));

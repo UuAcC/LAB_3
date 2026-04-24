@@ -33,9 +33,7 @@ TEST(PMM_EXPR, While_Workability) {
 	EXPECT_NO_THROW(run_PMME(code));
 }
 
-// ((325 - 45.231) * 78 - 23434 / 1.00)
-
-TEST(PMM_EXPR, WIP) {
-	string code = "a = (325 - 45.231) * 78"; // Variable Eq Pol Mul/Div 
+TEST(PMM_EXPR, Difficult_Calculations) {
+	string code = "a = ((325 - 45.231) * 78 - 23434 * 1.00);"; 
 	EXPECT_NO_THROW(run_PMME(code));
 }
