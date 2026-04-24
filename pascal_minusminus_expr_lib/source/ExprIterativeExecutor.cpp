@@ -40,7 +40,10 @@ NRV IterativeExecutor::visitMon(PMM_EXPR::Mon* mon) {
 			double dl = (double)left;
 			NRV result;
 			if (mon->getOp() == MUL) result.set_doub_val(dl * dr);
-			else result.set_doub_val(dl / dr);
+			else {
+				if (dr == 0) throw new EEE_invalid_argument("Division by zero!");
+				else result.set_doub_val(dl / dr);
+			}
 			exvalues.push(result);
 		}
 	}
@@ -64,8 +67,14 @@ NRV IterativeExecutor::visitPol(PMM_EXPR::Pol* pol) {
 			double dr = (double)right;
 			double dl = (double)left;
 			NRV result;
-			if (pol->getOp() == ADD) result.set_doub_val(dl + dr);
-			else result.set_doub_val(dl - dr);
+			switch (pol->getOp()) {
+			case ADD: result.set_doub_val(dl + dr); break;
+			case SUB: result.set_doub_val(dl - dr); break;
+			case MUL: result.set_doub_val(dl * dr); break;
+			case DIV: 
+				if (dr == 0) throw new EEE_invalid_argument("Division by zero!");
+				else result.set_doub_val(dl / dr); break;
+			}
 			exvalues.push(result);
 		}
 	}

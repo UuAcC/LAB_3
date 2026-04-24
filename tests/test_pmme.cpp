@@ -1,39 +1,41 @@
 #include <gtest/gtest.h>
 #include "Pascal_MinusMinus_Expression.h"
 
-void print_lexem_queue(ostream& ostr, TQueue<LEXEM>& q) {
-	TQueue<LEXEM> tmp(q);
-	size_t sz = q.get_size();
-	TQueue<string> vals(sz);
-	TQueue<LEX_TYPE> tps(sz);
-	while (!tmp.isEmpty()) {
-		LEXEM curr = tmp.pop();
-		vals.push(curr.value);
-		tps.push(curr.type);
-	}
-	ostr << "values: " << vals;
-	ostr << endl;
-	ostr << "types: " << tps;
+static void run_PMME(string code) {
+	cout << code << "\n\n";
+	PMM_EXPR _(code);
+	_.execute();
+	cout << "\n";
 }
 
-void run_PMME_array(string arr[], int sz) {
-	cout << endl;
-	for (int i = 0; i < sz; ++i) {
-		cout << arr[i] << endl;
-		PMM_EXPR _(arr[i]);
-		_.execute();
-		cout << endl;
-	}
+TEST(PMM_EXPR, Basic_Assignment_and_Calculations) {
+	string code = "a = 34; b = a + a; a = b";
+	EXPECT_NO_THROW(run_PMME(code));
+}
+
+TEST(PMM_EXPR, Zero_Division) {
+	string code = "a = 34; b = a / 0";
+	EXPECT_NO_THROW(run_PMME(code));
+}
+
+TEST(PMM_EXPR, Error_Variable_Not_Inited) {
+	string code = "a = b; b = a + 1";
+	EXPECT_NO_THROW(run_PMME(code));
+}
+
+TEST(PMM_EXPR, If_Else_Workability) {
+	string code = "a = 4; i = 0; if (a > i) { i = 7 }; if (a > i) { a = 34 } else { a = 49 }";
+	EXPECT_NO_THROW(run_PMME(code));
+}
+
+TEST(PMM_EXPR, While_Workability) {
+	string code = "i = 0; while (i < 10) { i = i + 1 }";
+	EXPECT_NO_THROW(run_PMME(code));
 }
 
 // ((325 - 45.231) * 78 - 23434 / 1.00)
 
-TEST(PMM_EXPR, Previous_main) {
-	string arr[4];
-	arr[0] = "a = 34; b = a + a; a = b";
-	arr[1] = "a = b; b = a + 1";
-	/*arr[2] = "a = ((325 - 45.231) * 78 - 23434 / 1.00); b = a + 1";*/
-	arr[2] = "a = (325 - 45.231)";
-	arr[3] = "a = 4; i = 0; if (a > i) { i = 7 }; if (a > i) { a = 34 } else { a = 49 }";
-	run_PMME_array(arr, 4);
+TEST(PMM_EXPR, WIP) {
+	string code = "a = (325 - 45.231) * 78"; // Variable Eq Pol Mul/Div 
+	EXPECT_NO_THROW(run_PMME(code));
 }

@@ -126,7 +126,8 @@ public:
 template<class Type>
 inline Type* PARCER::cast(Node* nod, string message) {
     Type* res = dynamic_cast<Type*>(nod);
-    if (res == nullptr) throw runtime_error(message);
+    if (res == nullptr) 
+        throw runtime_error("Incorrect lexemes order: tried to cast " + message);
     // здесь можно сделать виртуальный метод, возвращающий название или че-то такое
     else return res;
 }

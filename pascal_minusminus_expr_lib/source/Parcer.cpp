@@ -264,7 +264,7 @@ PMM_EXPR::Terminal* PARCER::init_terminal_node(lexem lex) {
 
 bool PARCER::reduce(TStack<Node*>* stack, TQueue<Terminal*>* queue) {
     int res = 1;
-    TStack<Node*> stackOfStashed(7);
+    TStack<Node*> stackOfStashed(20);
     while (!stack->isEmpty()) {
         Node* stackItem = stack->pop();
         res *= stackItem->getCode();
@@ -287,21 +287,21 @@ bool PARCER::reduce(TStack<Node*>* stack, TQueue<Terminal*>* queue) {
             return true;
         }
         case 2014: { 
-            Mon* left = cast<Mon>(stackItem, "Incorrect lexemes order: tried to cast Mon");
-            MuDv* op = cast<MuDv>(stackOfStashed.pop(), "Incorrect lexemes order: tried to cast Mul/Div");
-            Variable* right = cast<Variable>(stackOfStashed.pop(), "Incorrect lexemes order: tried to cast Variable");
+            Mon* left = cast<Mon>(stackItem, "Mon");
+            MuDv* op = cast<MuDv>(stackOfStashed.pop(), "Mul/Div");
+            Variable* right = cast<Variable>(stackOfStashed.pop(), "Variable");
             stack->push(new Mon(left, op->getType(), right));
             return true;
         } 
         case 3021: {
-            Mon* left = cast<Mon>(stackItem, "Incorrect lexemes order: tried to cast Mon");
-            MuDv* op = cast<MuDv>(stackOfStashed.pop(), "Incorrect lexemes order: tried to cast Mul/Div");
-            FPNumber* right = cast<FPNumber>(stackOfStashed.pop(), "Incorrect lexemes order: tried to cast FPNumber");
+            Mon* left = cast<Mon>(stackItem, "Mon");
+            MuDv* op = cast<MuDv>(stackOfStashed.pop(), "Mul/Div");
+            FPNumber* right = cast<FPNumber>(stackOfStashed.pop(), "FPNumber");
             stack->push(new Mon(left, op->getType(), right));
             return true;
         } 
         case 1855: {
-            Mon* mon = cast<Mon>(stackOfStashed.pop(), "Incorrect lexemes order: tried to cast Mon");
+            Mon* mon = cast<Mon>(stackOfStashed.pop(), "Mon");
             Node* right = mon->getRight();
             if (right != nullptr) {
                 Variable* rght = dynamic_cast<Variable*>(right);
@@ -332,27 +332,40 @@ bool PARCER::reduce(TStack<Node*>* stack, TQueue<Terminal*>* queue) {
             if (!queue->isEmpty() && queue->top()->getCode() == 19) { 
                 stackOfStashed.push(stackItem); break; 
             }
-            Pol* left = cast<Pol>(stackItem, "Incorrect lexemes order: tried to cast Pol");
-            AdSb* op = cast<AdSb>(stackOfStashed.pop(), "Incorrect lexemes order: tried to cast Add/Sub");
-            Mon* right = cast<Mon>(stackOfStashed.pop(), "Incorrect lexemes order: tried to cast Mon");
+            Pol* left = cast<Pol>(stackItem, "Pol");
+            AdSb* op = cast<AdSb>(stackOfStashed.pop(), "Add/Sub");
+            Mon* right = cast<Mon>(stackOfStashed.pop(), "Mon");
             stack->push(new Pol(left, op->getType(), right));
             return true;
         }
+        case 59: {
+            stackOfStashed.push(stackItem);
+            if (!queue->isEmpty() && queue->top()->getCode() == 19) {
+                stack->push(stackOfStashed.pop()); return false;
+            } else break;
+        }
         case 2065: {
-            Pol* pol = cast<Pol>(stackOfStashed.pop(), "Incorrect lexemes order: tried to cast Pol");
+            Pol* pol = cast<Pol>(stackOfStashed.pop(), "Pol");
             Mon* right = static_cast<Mon*>(pol->getRight());
             if (right != nullptr)
                 stack->push(new Pol(static_cast<Pol*>(pol->getLeft()), pol->getOp(), right));
             else stack->push(new Pol(static_cast<Mon*>(pol->getLeft())));
             return true;
         }
+        case 66139: {
+            Pol* left = cast<Pol>(stackItem, "Pol");
+            MuDv* op = cast<MuDv>(stackOfStashed.pop(), "Mul/Div");
+            Pol* right = cast<Pol>(stackOfStashed.pop(), "Pol");
+            stack->push(new Pol(left, op->getType(), right));
+            return true;
+        }
         case 80063: {
             if (!queue->isEmpty() && queue->top()->getCode() == 17) {
                 stackOfStashed.push(stackItem); break;
             }
-            Pol* left = cast<Pol>(stackItem, "Incorrect lexemes order: tried to cast Pol");
-            Cop* op = cast<Cop>(stackOfStashed.pop(), "Incorrect lexemes order: tried to cast compare operation");
-            Pol* right = cast<Pol>(stackOfStashed.pop(), "Incorrect lexemes order: tried to cast Pol");
+            Pol* left = cast<Pol>(stackItem, "Pol");
+            Cop* op = cast<Cop>(stackOfStashed.pop(), "compare operation");
+            Pol* right = cast<Pol>(stackOfStashed.pop(), "Pol");
             stack->push(new Comp(left, op->getType(), right));
             return true;
         }
@@ -360,7 +373,7 @@ bool PARCER::reduce(TStack<Node*>* stack, TQueue<Terminal*>* queue) {
             if (!queue->isEmpty() && queue->top()->getCode() == 11) {
                 stackOfStashed.push(stackItem); break;
             }
-            Comp* cmp = cast<Comp>(stackOfStashed.pop(), "Incorrect lexemes order: tried to cast Comp");
+            Comp* cmp = cast<Comp>(stackOfStashed.pop(), "Comp");
             stack->push(new Comp(static_cast<Pol*>(cmp->getLeft()), cmp->getOp(), static_cast<Pol*>(cmp->getRight())));
             return true;
         }
@@ -368,18 +381,18 @@ bool PARCER::reduce(TStack<Node*>* stack, TQueue<Terminal*>* queue) {
             if (!queue->isEmpty() && queue->top()->getCode() == 17) {
                 stackOfStashed.push(stackItem); break;
             }
-            Variable* left = cast<Variable>(stackItem, "Incorrect lexemes order: tried to cast Variable");
+            Variable* left = cast<Variable>(stackItem, "Variable");
             stackOfStashed.pop();
-            Pol* right = cast<Pol>(stackOfStashed.pop(), "Incorrect lexemes order: tried to cast Pol)");
+            Pol* right = cast<Pol>(stackOfStashed.pop(), "Pol)");
             stack->push(new EqOper(left, right));
             return true;
         }
         case 932096165: {
             stackOfStashed.pop(); 
-            Comp* cond = cast<Comp>(stackOfStashed.pop(), "Incorrect lexemes order: tried to cast Comp");
+            Comp* cond = cast<Comp>(stackOfStashed.pop(), "Comp");
             stackOfStashed.pop();
             stackOfStashed.pop();
-            Expr* expr = cast<Expr>(stackOfStashed.pop(), "Incorrect lexemes order: tried to cast Expr");
+            Expr* expr = cast<Expr>(stackOfStashed.pop(), "Expr");
             stack->push(new IfOper(cond, expr));
             return true;
         }
@@ -392,19 +405,19 @@ bool PARCER::reduce(TStack<Node*>* stack, TQueue<Terminal*>* queue) {
             return true;
         }
         case 34834943: {
-            IfOper* iop = cast<IfOper>(stackItem, "Incorrect lexemes order: tried to cast IfOper");
+            IfOper* iop = cast<IfOper>(stackItem, "IfOper");
             stackOfStashed.pop();
             stackOfStashed.pop();
-            Expr* expr = cast<Expr>(stackOfStashed.pop(), "Incorrect lexemes order: tried to cast Expr");
+            Expr* expr = cast<Expr>(stackOfStashed.pop(), "Expr");
             stack->push(new IfElse(iop, expr));
             return true;
         }
-        case 888742855: {
+        case 802036235: {
             stackOfStashed.pop();
-            Comp* cond = cast<Comp>(stackOfStashed.pop(), "Incorrect lexemes order: tried to cast Comp");
+            Comp* cond = cast<Comp>(stackOfStashed.pop(), "Comp");
             stackOfStashed.pop();
             stackOfStashed.pop();
-            Expr* expr = cast<Expr>(stackOfStashed.pop(), "Incorrect lexemes order: tried to cast Expr");
+            Expr* expr = cast<Expr>(stackOfStashed.pop(), "Expr");
             stack->push(new WhileOper(cond, expr));
             return true;
         }
@@ -432,9 +445,9 @@ bool PARCER::reduce(TStack<Node*>* stack, TQueue<Terminal*>* queue) {
             return true;
         }
         case 182683: {
-            Expr* expr = cast<Expr>(stackItem, "Incorrect lexemes order: tried to cast Expr");
+            Expr* expr = cast<Expr>(stackItem, "Expr");
             stackOfStashed.pop();
-            Operator* op = cast<Operator>(stackOfStashed.pop(), "Incorrect lexemes order: tried to cast Operator");
+            Operator* op = cast<Operator>(stackOfStashed.pop(), "Operator");
             stack->push(new Expr(expr, op));
             return true;
         }

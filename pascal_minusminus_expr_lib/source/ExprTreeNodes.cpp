@@ -27,6 +27,9 @@ PMM_EXPR::Pol::Pol(Mon* l) : BiNode(l) {}
 PMM_EXPR::Pol::Pol(Pol* l, LexemType _op, Mon* r) : BiNode(l, r) {
     op = _op;
 }
+PMM_EXPR::Pol::Pol(Pol* l, LexemType _op, Pol* r) : BiNode(l, r) {
+    op = _op;
+}
 LEX_TYPE PMM_EXPR::Pol::getOp() const { return op; }
 PMM_EXPR::NodeRetVal PMM_EXPR::Pol::accept(Visitor* v) {
     return v->visitPol(this);
