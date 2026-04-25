@@ -1,0 +1,42 @@
+ВАЖНО: НЕПРИГОДНО ДЛЯ ANTLR4 В ТЕКУЩЕМ ВИДЕ. Написано так исключительно для моего удобства
+
+Потомки Terminal написаны заглавными буквами, остальное - нетерминальные символы. 
+Из терминальных символов в качестве потомков в дереве сохраняются только VAR и FPNUMBER.
+
+ExprTree: 	Expr ( 71 )
+;
+Expr: 		Operator ( 83 )
+|		Expr SMCLN ( 2201 )
+| 		Expr SMCLN Operator ( 182683 )
+;
+
+Operator: 	EqOper ( 67 )
+| 		WhileOper ( 89 )
+| 		IfElse ( 79 )
+;
+
+WhileOper:	WHILE L_R_BR Comp R_R_BR L_C_BR Expr R_C_BR ( 802036235 )
+;
+IfElse: 	IfOper ( 73 )
+| 		IfOper ELSE L_C_BR Expr R_C_BR ( 34834943 )
+;
+IfOper: 	IfOp L_R_BR Comp R_R_BR L_C_BR Expr R_C_BR ( 932096165 )
+;
+EqOper: 	VAR EQ Pol ( 3422 )
+;
+PrintOper:	PRINT L_R_BR VAR R_R_BR ( WIP )
+
+Comp: 		pol C_OP pol ( 80063 )
+|		L_R_BR Comp R_R_BR ( 2135 )
+;
+
+Pol: 		Mon ( 53 )
+| 		Pol ADSB Mon ( 53159 )
+|		L_R_BR Pol R_R_BR ( 2065 )
+|		L_R_BR Pol R_R_BR MUDV Mon ( 2079455 )
+; 
+Mon: 		VAR ( 2 )
+|		FPNUMBER ( 3 )
+| 		Mon MUDV Mon( 53371 )
+|		L_R_BR Mon R_R_BR ( 1855 )
+;
