@@ -3,7 +3,8 @@
 using namespace std;
 
 #include "ExprBaseVisitor.h"
-#include "ExprVarTable.h"
+#include "THashTable.h"
+//#include "ExprVarTable.h"
 
 struct ExecNode {
 	PMM_EXPR::Node* nod;
@@ -16,7 +17,9 @@ class IterativeExecutor : public Visitor {
 	stack<ExecNode> exstack;
 	int last_status;
 
-	ExprVarTable var_table;
+	//ExprVarTable var_table;
+	const int vt_init_size = 64;
+	THashTable<string, double> var_table;
 	bool table_inited = false;
 private:
 	virtual NRV visitFPNumber(PMM_EXPR::FPNumber* num) override;

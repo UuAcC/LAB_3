@@ -15,7 +15,7 @@ NRV IterativeExecutor::visitVariable(PMM_EXPR::Variable* var) {
 	else {
 		string name = var->getName();
 		NRV res = NRV(name);
-		if (var_table.contains(name))
+		if (var_table.find(name) != -1)//(var_table.contains(name))
 			res.set_doub_val(var_table[name]);
 		exvalues.push(res);
 	}
@@ -30,7 +30,11 @@ NRV IterativeExecutor::visitMon(PMM_EXPR::Mon* mon) {
 		exstack.push(ExecNode(mon->getLeft(), 0));
 	}
 	else {
-		if (!table_inited) { var_table = ExprVarTable(); table_inited = true; }
+		if (!table_inited) { 
+			//var_table = ExprVarTable(); 
+			var_table = THashTable<string, double>(vt_init_size);
+			table_inited = true; 
+		}
 		if (mon->getRight() != nullptr) {
 			NRV right = exvalues.top(); exvalues.pop();
 			NRV left = exvalues.top(); exvalues.pop();
@@ -58,7 +62,11 @@ NRV IterativeExecutor::visitPol(PMM_EXPR::Pol* pol) {
 		exstack.push(ExecNode(pol->getLeft(), 0));
 	}
 	else {
-		if (!table_inited) { var_table = ExprVarTable(); table_inited = true; }
+		if (!table_inited) { 
+			//var_table = ExprVarTable(); 
+			var_table = THashTable<string, double>(vt_init_size);
+			table_inited = true;
+		}
 		if (pol->getRight() != nullptr) {
 			NRV right = exvalues.top(); exvalues.pop();
 			NRV left = exvalues.top(); exvalues.pop();
@@ -113,7 +121,11 @@ NRV IterativeExecutor::visitEqOper(PMM_EXPR::EqOper* eqop) {
 		exstack.push(ExecNode(eqop->getLeft(), 0));
 	}
 	else {
-		if (!table_inited) { var_table = ExprVarTable(); table_inited = true; }
+		if (!table_inited) { 
+			//var_table = ExprVarTable(); 
+			var_table = THashTable<string, double>(vt_init_size);
+			table_inited = true;
+		}
 		NRV right = exvalues.top(); exvalues.pop();
 		NRV left = exvalues.top(); exvalues.pop();
 		if (!right.hv_dval)
@@ -121,8 +133,8 @@ NRV IterativeExecutor::visitEqOper(PMM_EXPR::EqOper* eqop) {
 		double dr = (double)right;
 		string ls = (string)left;
 		NRV result;
-		if (var_table.contains(ls)) { var_table[ls] = dr; }
-		else { var_table.insert(ExprVarData(ls, dr)); }
+		if (var_table.find(ls) != -1) /*(var_table.contains(ls))*/ { var_table[ls] = dr; }
+		else { var_table.insert(/*ExprVarData(ls, dr)*/ ls, dr); }
 		std::cout << ls << " = " << dr << ";\n";
 		result.set_var_name(ls);
 	}

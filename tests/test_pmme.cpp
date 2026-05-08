@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include "Pascal_MinusMinus_Expression.h"
+#include "THashTable.h"
 
 static void run_PMME(string code) {
 	cout << code << "\n\n";
